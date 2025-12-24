@@ -1,0 +1,12 @@
+{
+  "name": "prohibited-word-checker",
+  "version": "1.8.8",
+  "description": "성남 생활기록부 자동 점검 시스템",
+  "scripts": {
+    "dev": "python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000",
+    "start": "python -m uvicorn app:app --host 0.0.0.0 --port 8000",
+    "install:py": "python -m pip install -r requirements.txt"
+  },
+  "keywords": ["fastapi", "nlp", "korean"],
+  "license": "MIT"
+}

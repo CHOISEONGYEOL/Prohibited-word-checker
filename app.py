@@ -54,7 +54,7 @@ class AnalyzeResponse(BaseModel):
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="Seongnam LifeRec Checker", version="1.6.0")
+app = FastAPI(title="Seongnam LifeRec Checker", version="1.8.8")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -71,7 +71,7 @@ RULES = [
     {"pattern": r"(?:TikTok|틱톡)", "label": "상호명", "replacement": "엔터테인먼트 플랫폼", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "TikTok(틱톡) 등 → 엔터테인먼트 플랫폼"}, "aliases": ["틱톡영상", "tiktoc", "틱톡스"]},
     {"pattern": r"(?:YouTube|유튜브|TVING|티빙|watcha|왓챠|netflix|넷플릭스|wavve|웨이브|disney\s?plus|디즈니\+?|디즈니플러스|OTT)", "label": "상호명", "replacement": "동영상 플랫폼", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "YouTube(유튜브), TVING(티빙) ... OTT 등 → 동영상 플랫폼"}, "aliases": ["yutube", "you tube", "유튭", "유툽", "넷플", "왓챠플레이"]},
     {"pattern": r"(?:YouTuber|유튜버)", "label": "직업명", "replacement": "동영상 크리에이터", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "YouTuber(유튜버) 등 → 동영상 크리에이터, 동영상 제공자"}, "aliases": ["유튜브러", "youtuber"]},
-    {"pattern": r"(?:KakaoTalk|카카오톡|카톡|LINE|라인|Instagram|인스타그램|Twitter|트위터|Meta|메타|Facebook|페이스북)", "label": "상호명", "replacement": "소셜 네트워크 서비스", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "KakaoTalk, Instagram, Facebook 등 → 메신저, 소셜네트워크서비스"}, "aliases": ["kakaotalk", "kkt", "카톡방", "인스타", "insta", "페북", "x(트위터)"]},
+    {"pattern": r"(?:KakaoTalk|카카오톡|카톡|\bLINE\b|(?<![가-힣])라인(?![가-힣])|Instagram|인스타그램|Twitter|트위터|Meta|메타|Facebook|페이스북)", "label": "상호명", "replacement": "소셜 네트워크 서비스", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "KakaoTalk, Instagram, Facebook 등 → 메신저, 소셜네트워크서비스"}, "aliases": ["kakaotalk", "kkt", "카톡방", "인스타", "insta", "페북", "x(트위터)"]},
     {"pattern": r"(?:Chat\s?GPT|챗\s?GPT|챗지피티|wrtn|뤼튼|bing\s?Chat|빙챗|Bard|바드|하이퍼클로바X|HyperClova\s?X)", "label": "상호명", "replacement": "생성형 인공지능", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "Chat GPT(챗지피티), wrtn(뤼튼) ... 등 → 대화형 인공지능, 생성형 인공지능"}, "aliases": ["chatgpt", "챗쥐피티", "gpt챗", "빙챗봇", "하클x", "뤼튼ai"]},
     {"pattern": r"(?:Canva|캔바|miricanvas|미리캔버스|mangoboard|망고보드)", "label": "상호명", "replacement": "디자인 제작 플랫폼", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "miricanvas(미리캔버스), mangoboard(망고보드), Canva(캔바) 등"}, "aliases": ["캔바앱", "미캔"]},
     {"pattern": r"(?:KineMaster|키네마스터|Premiere\s?Pro|프리미어\s?프로)", "label": "프로그램명", "replacement": "영상 편집 프로그램", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "영상 제작 프로그램, 영상 편집 프로그램"}, "aliases": ["키네", "프리미어"]},
@@ -84,12 +84,47 @@ RULES = [
     # --- 강연 / 이동수단 / 화상회의 ---
     {"pattern": r"(?:TED|테드)", "label": "강연명", "replacement": "온라인 강연회", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "TED(테드) 등 → 온라인 강연회"}, "aliases": ["ted 강연", "테드톡"]},
     {"pattern": r"(?:KTX|케이티엑스|SRT|에스알티)", "label": "상호명", "replacement": "고속 열차", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "KTX, SRT → 고속 열차"}, "aliases": ["케텍", "에스알티"]},
-    {"pattern": r"(?:Zoom|줌|웨일온|Whale\s?ON)", "label": "상호명", "replacement": "화상 회의", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "Zoom(줌) 등 → 화상 회의"}, "aliases": ["줌미팅", "웨일온회의"]},
+    {"pattern": r"(?:\bZoom\b|(?<![가-힣])줌(?![가-힣])|웨일온|Whale\s?ON)", "label": "상호명", "replacement": "화상 회의", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "Zoom(줌) 등 → 화상 회의"}, "aliases": ["줌미팅", "웨일온회의"]},
     # --- 기관명 / 논문 / 외국어 / 특수문자 ---
-    {"pattern": r"(?:UN|EU|WHO|WTO|OECD|IMF|UNESCO|IAEA|NATO|유엔|유럽연합|세계\s?보건\s?기구|세계\s?무역\s?기구|경제협력개발기구|국제통화기금|유네스코|국제원자력기구|북대서양조약기구)", "label": "기관명", "replacement": "국제기구", "confidence": 0.98, "source": {"doc": "단체명 기재", "page": 1, "quote": "교육관련기관 제외 특정 기관명 기재 불가"}, "aliases": ["유엔기구", "오이시디", "나토", "유네스코한국위원회"]},
+    {"pattern": r"(?:UN|EU|ASEAN|APEC|G7|G20|WHO|WTO|OECD|IMF|IAEA|NATO|UNESCO|UNICEF|UNEP|UNDP|UNHCR|유엔|유럽연합)", "label": "기관명", "replacement": "국제기구", "confidence": 0.98, "source": {"doc": "단체명 기재", "page": 1, "quote": "교육관련기관 제외 특정 기관명 기재 불가"}, "aliases": ["유엔기구", "오이시디", "나토", "유네스코한국위원회"]},
     {"pattern": r"소논문|연구보고서", "label": "논문 실적", "replacement": "탐구 활동", "confidence": 0.99, "source": {"doc": "논문 기재", "page": 1, "quote": "자율탐구활동 산출물 실적 기재 불가"}, "aliases": ["소논문 작성", "연구보고서를 제출"]},
     {"pattern": r"[一-龥]", "label": "외국어", "replacement": None, "confidence": 0.99, "source": {"doc": "외국어 기재", "page": 1, "quote": "한글 사용 원칙. 영문 제외 외국어 입력 불가."}, "aliases": []},
-    {"pattern": r"[·※▷▶]", "label": "특수문자", "replacement": " ", "confidence": 0.99, "source": {"doc": "특수문자", "page": 1, "quote": "서술형 특수문자 입력 지양"}, "aliases": []},
+    {"pattern": r"·", "label": "특수문자", "replacement": ", ", "confidence": 0.99, "source": {"doc": "특수문자", "page": 1, "quote": "서술형 특수문자 입력 지양"}, "aliases": []},
+    {"pattern": r"[※▷▶]", "label": "특수문자", "replacement": " ", "confidence": 0.99, "source": {"doc": "특수문자", "page": 1, "quote": "서술형 특수문자 입력 지양"}, "aliases": []},
+    # --- 국내 연구기관 ---
+    {"pattern": r"\bKIOST\b", "label": "기관명", "replacement": "해양과학기술원", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "영문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bKIGAM\b", "label": "기관명", "replacement": "지질자원연구원", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "영문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bNOAA\b", "label": "기관명", "replacement": "미국해양대기청", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "영문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bIAU\b", "label": "기관명", "replacement": "국제천문연맹", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "영문 약어는 한글 풀이로 대체"}, "aliases": []},
+    # --- 과학 전문 용어 ---
+    {"pattern": r"\bGIC\b", "label": "전문 약어", "replacement": "지자기유도전류", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bEEZ\b", "label": "전문 약어", "replacement": "배타적 경제수역", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bK-VENT\b", "label": "전문 약어", "replacement": "호흡기 감염병 위험도 평가툴", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    # --- 우주/항공 기관명 ---
+    {"pattern": r"\bNASA\b", "label": "기관명", "replacement": "미국항공우주국", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "영문 약어는 한글 풀이로 대체"}, "aliases": ["나사"]},
+    {"pattern": r"\bESA\b", "label": "기관명", "replacement": "유럽우주국", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "영문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bJAXA\b", "label": "기관명", "replacement": "일본우주항공연구개발기구", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "영문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bSpaceX\b", "label": "기관명", "replacement": "민간 우주개발 기업", "confidence": 0.95, "source": {"doc": "영문 약어", "page": 1, "quote": "특정 기업명은 일반화 표현 사용"}, "aliases": ["스페이스엑스"]},
+    # --- 해양/과학 전문 약어 ---
+    {"pattern": r"\bAUV\b", "label": "전문 약어", "replacement": "자율무인잠수정", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bROV\b", "label": "전문 약어", "replacement": "원격조종무인잠수정", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bGPS\b", "label": "전문 약어", "replacement": "위성항법장치", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bLiDAR\b", "label": "전문 약어", "replacement": "레이저 거리측정장치", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": ["라이다"]},
+    {"pattern": r"\bSODAR\b", "label": "전문 약어", "replacement": "음파 탐지장치", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bSONAR\b", "label": "전문 약어", "replacement": "수중 음파 탐지기", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": ["소나"]},
+    {"pattern": r"\bRADAR\b", "label": "전문 약어", "replacement": "전파 탐지기", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": ["레이더"]},
+    # --- 환경/에너지 전문 약어 ---
+    {"pattern": r"\bCO2\b", "label": "전문 약어", "replacement": "이산화탄소", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "화학식은 한글명으로 대체"}, "aliases": []},
+    {"pattern": r"\bPM2\.5\b", "label": "전문 약어", "replacement": "초미세먼지", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bPM10\b", "label": "전문 약어", "replacement": "미세먼지", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bLED\b", "label": "전문 약어", "replacement": "발광다이오드", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bIoT\b", "label": "전문 약어", "replacement": "사물인터넷", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bAI\b", "label": "전문 약어", "replacement": "인공지능", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bVR\b", "label": "전문 약어", "replacement": "가상현실", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bAR\b", "label": "전문 약어", "replacement": "증강현실", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bDNA\b", "label": "전문 약어", "replacement": "디옥시리보핵산", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bRNA\b", "label": "전문 약어", "replacement": "리보핵산", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
+    {"pattern": r"\bPCR\b", "label": "전문 약어", "replacement": "중합효소연쇄반응", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
     # --- 학술 용어(일반화) ---
     {"pattern": r"(?:CRISPR-?Cas9|크리스퍼-?카스9?)", "label": "전문 용어", "replacement": "유전자 가위 기술", "confidence": 0.93, "source": {"doc": "학술 용어 일반화", "page": 1, "quote": "과도한 전문용어는 일반화/설명적 표현 사용 권장"}, "aliases": ["crispr", "cas9", "크리스퍼"]},
 ]
@@ -166,6 +201,47 @@ def regex_match(text: str) -> List[Hit]:
                 source=Source(doc=src.get("doc", ""), page=src.get("page"), quote=src.get("quote", "")),
                 start=match.start(), end=match.end()
             ))
+    return hits
+
+
+# --- 알려지지 않은 영문 약어 감지 ---
+_KNOWN_ABBREVS = set()
+for rule in RULES:
+    pattern = rule.get("pattern", "")
+    # \bXXX\b 형태에서 추출
+    matches = re.findall(r'\\b([A-Z][A-Z0-9]{1,10})\\b', pattern)
+    _KNOWN_ABBREVS.update(matches)
+    # (?:XXX|YYY) 형태에서 추출
+    matches = re.findall(r'(?:^|[|(?:])([A-Z][A-Z0-9]{1,10})(?:[|)]|$)', pattern)
+    _KNOWN_ABBREVS.update(matches)
+
+# 일반 영어 단어 (약어 아님)
+_COMMON_ENGLISH = {"THE", "AND", "FOR", "ARE", "BUT", "NOT", "YOU", "ALL", "CAN", "HAD", "HER", "WAS", "ONE", "OUR", "OUT", "HAS", "HIS", "HOW", "ITS", "MAY", "NEW", "NOW", "OLD", "SEE", "WAY", "BOY", "DID", "GET", "HIM", "LET", "PUT", "SAY", "SHE", "TOO", "USE", "TOP", "END", "SET", "ADD"}
+
+
+def detect_unknown_abbreviations(text: str, existing_hits: List[Hit]) -> List[Hit]:
+    """2글자 이상 대문자 영문 약어 중 규칙에 없는 것 감지 (빨간줄 표시용)"""
+    hits: List[Hit] = []
+    covered = set()
+    for h in existing_hits:
+        for i in range(h.start, h.end):
+            covered.add(i)
+
+    for match in re.finditer(r'\b([A-Z]{2,10})\b', text):
+        abbrev = match.group(1)
+        start, end = match.start(), match.end()
+        if any(i in covered for i in range(start, end)):
+            continue
+        if abbrev in _KNOWN_ABBREVS or abbrev in _COMMON_ENGLISH:
+            continue
+        hits.append(Hit(
+            span=abbrev,
+            label="미확인 영문 약어",
+            replacement=None,
+            confidence=0.85,
+            source=Source(doc="자동 감지", page=None, quote="영문 약어가 감지됨. 한글 표기 필요 여부 검토 필요."),
+            start=start, end=end
+        ))
     return hits
 
 
@@ -336,10 +412,10 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생활기록부 자동 점검 – 데모 v1.6</title>
+<title>생활기록부 자동 점검 – 데모 v1.8.8</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}</style></head><body>
 <div class="wrap">
-<h1>🧭 성남 생활기록부 자동 점검 (데모 v1.6)</h1>
+<h1>성남 생활기록부 자동 점검 (데모 v1.8.8)</h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · 오른쪽에 <b>수정본 미리보기</b>와 <b>모두 적용</b>이 있어요</div>
 <textarea id="txt"></textarea>
@@ -458,7 +534,7 @@ document.getElementById("preview").innerHTML = previewParts.join("").replace(/\\
 const hitsEl = document.getElementById("hits");
 hitsEl.innerHTML = "";
 if (!hits.length) {
-hitsEl.innerHTML = '<div class="muted">규정 위반 항목을 찾지 못했습니다. 👌</div>';
+hitsEl.innerHTML = '<div class="muted">규정 위반 항목을 찾지 못했습니다.</div>';
 return;
 }
 for (const h of hits) {
@@ -535,9 +611,11 @@ def analyze(payload: AnalyzeRequest = Body(...)):
     primary_hits = collapse_parenthetical_duplicates(payload.text, hits_rule + hits_alias)
     # 4) Embedding Analysis Unit (conservative)
     hits_semantic = semantic_match(payload.text)
-    # 5) Merge & respond
-    final_hits = merge_hits(primary_hits, hits_semantic)
+    # 5) Merge known hits
+    known_hits = merge_hits(primary_hits, hits_semantic)
+    # 6) Detect unknown abbreviations (v1.8.3)
+    hits_unknown = detect_unknown_abbreviations(payload.text, known_hits)
+    # 7) Final merge & respond
+    final_hits = merge_hits(known_hits, hits_unknown)
     latency_ms = int((time.perf_counter() - t0) * 1000)
     return AnalyzeResponse(hits=final_hits, latency_ms=latency_ms)
-
-
