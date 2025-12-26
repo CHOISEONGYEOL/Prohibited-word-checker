@@ -1,7 +1,8 @@
 import os
 import time
 import re
-from typing import List, Optional, Tuple
+import unicodedata
+from typing import List, Optional, Dict
 import numpy as np
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,9 +53,136 @@ class AnalyzeResponse(BaseModel):
 
 
 # =========================
+# Byte Counter Schemas (v2.0)
+# =========================
+class SuspiciousChar(BaseModel):
+    index: int
+    char_repr: str
+    codepoint: str
+    name: str
+    unicode_category: str
+
+
+class ByteCountRequest(BaseModel):
+    text: str
+    normalize: bool = False
+    newline_mode: str = "LF"  # "LF" or "CRLF"
+
+
+class ByteCountResponse(BaseModel):
+    utf8_bytes: int
+    char_count_including_spaces: int
+    char_count_excluding_spaces: int
+    newline_lf: int
+    newline_cr: int
+    tab: int
+    suspicious: List[SuspiciousChar]
+    normalized_text: Optional[str] = None
+    normalized_utf8_bytes: Optional[int] = None
+
+
+# =========================
+# Byte Counter Logic (v2.0)
+# =========================
+SUSPICIOUS_CODEPOINTS = {
+    0x0009: "TAB (\\t)",
+    0x000A: "LF (\\n)",
+    0x000D: "CR (\\r)",
+    0x00A0: "NBSP (no-break space)",
+    0x2000: "EN QUAD",
+    0x2001: "EM QUAD",
+    0x2002: "EN SPACE",
+    0x2003: "EM SPACE",
+    0x2004: "THREE-PER-EM SPACE",
+    0x2005: "FOUR-PER-EM SPACE",
+    0x2006: "SIX-PER-EM SPACE",
+    0x2007: "FIGURE SPACE",
+    0x2008: "PUNCTUATION SPACE",
+    0x2009: "THIN SPACE",
+    0x200A: "HAIR SPACE",
+    0x200B: "ZWSP (zero width space)",
+    0x200C: "ZWNJ (zero width non-joiner)",
+    0x200D: "ZWJ (zero width joiner)",
+    0x202F: "NNBSP (narrow no-break space)",
+    0x205F: "MMSP (medium mathematical space)",
+    0x3000: "IDEOGRAPHIC SPACE",
+    0xFEFF: "BOM/ZWNBSP",
+}
+
+
+def utf8_byte_len(text: str) -> int:
+    """생활기록부 카운팅에 맞춘 핵심: UTF-8 인코딩 바이트 길이."""
+    return len(text.encode("utf-8"))
+
+
+def analyze_bytes(text: str) -> dict:
+    """텍스트의 바이트 및 문자 정보 분석."""
+    chars_including = len(text)
+    chars_excluding_spaces = sum(1 for ch in text if not ch.isspace())
+    lf = text.count("\n")
+    cr = text.count("\r")
+    tab = text.count("\t")
+
+    suspicious: List[SuspiciousChar] = []
+    for i, ch in enumerate(text):
+        cp = ord(ch)
+        if cp in SUSPICIOUS_CODEPOINTS:
+            name = SUSPICIOUS_CODEPOINTS[cp]
+            category = unicodedata.category(ch)
+            suspicious.append(SuspiciousChar(
+                index=i,
+                char_repr=repr(ch),
+                codepoint=f"U+{cp:04X}",
+                name=name,
+                unicode_category=category,
+            ))
+
+    return {
+        "utf8_bytes": utf8_byte_len(text),
+        "char_count_including_spaces": chars_including,
+        "char_count_excluding_spaces": chars_excluding_spaces,
+        "newline_lf": lf,
+        "newline_cr": cr,
+        "tab": tab,
+        "suspicious": suspicious,
+    }
+
+
+def normalize_for_neis(
+    text: str,
+    newline_mode: str = "LF",
+    replace_nbsp: bool = True,
+    remove_zero_width: bool = True,
+) -> str:
+    """
+    NEIS 입력에 맞춘 정규화.
+    - newline_mode: 줄바꿈을 LF 또는 CRLF로 통일
+    - replace_nbsp: NBSP류를 일반 스페이스로 치환
+    - remove_zero_width: ZWSP/ZWJ/ZWNJ/FEFF 제거
+    """
+    # 1) 줄바꿈 통일
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    if newline_mode.upper() == "CRLF":
+        text = text.replace("\n", "\r\n")
+
+    # 2) 특수 공백 치환
+    if replace_nbsp:
+        text = text.replace("\u00A0", " ")   # NBSP
+        text = text.replace("\u202F", " ")   # NNBSP
+        text = text.replace("\u3000", " ")   # IDEOGRAPHIC SPACE
+
+    # 3) 제로폭/보이지 않는 문자 제거
+    if remove_zero_width:
+        for zw in ("\u200B", "\u200C", "\u200D", "\uFEFF"):
+            text = text.replace(zw, "")
+
+    return text
+
+
+# =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="Seongnam LifeRec Checker", version="1.8.9")
+app = FastAPI(title="LifeRec Checker", version="2.0.1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -412,12 +540,12 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생활기록부 자동 점검 – 데모 v1.8.9</title>
-<style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}</style></head><body>
+<title>생활기록부 자동 점검 – v2.0.1</title>
+<style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}</style></head><body>
 <div class="wrap">
-<h1>성남 생활기록부 자동 점검 (데모 v1.8.9)</h1>
+<h1>생활기록부 자동 점검 <span style="font-size:14px;color:var(--accent)">(v2.0.1)</span></h1>
 <div class="card">
-<div class="muted">본문을 붙여넣고 "검사"를 누르세요 · 오른쪽에 <b>수정본 미리보기</b>와 <b>모두 적용</b>이 있어요</div>
+<div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
 <div class="row" style="margin-top:8px">
 <button id="btn">검사</button>
@@ -425,6 +553,19 @@ HTML_PAGE = """
 <button id="btnSample">샘플 텍스트</button>
 <span id="lat" class="muted">–</span>
 <span id="chg" class="muted">변경 0건</span>
+</div>
+<!-- 바이트 계산 결과 영역 (v2.0) -->
+<div class="byte-box" id="byteBox" style="display:none">
+<div style="margin-bottom:12px;font-weight:700">바이트 계산 결과 <span class="muted">(생활기록부 UTF-8 기준)</span></div>
+<div class="byte-grid">
+<div class="byte-item"><div class="byte-value" id="byteUtf8">-</div><div class="byte-label">UTF-8 바이트</div></div>
+</div>
+<div id="suspiciousArea" style="display:none">
+<div class="suspicious-list">
+<div style="margin-bottom:8px;font-weight:600;color:var(--warn)">⚠️ 의심 문자 감지됨 (보이지 않는 특수문자)</div>
+<div id="suspiciousList"></div>
+</div>
+</div>
 </div>
 <div class="grid">
 <div class="panel"><div class="muted" style="margin-bottom:8px">하이라이트 결과(원문)</div><div id="view" style="line-height:1.8; white-space:pre-wrap;"></div></div>
@@ -440,6 +581,21 @@ let currentHits = [];
 const txtEl = document.getElementById("txt");
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 async function analyze(text){const r=await fetch("/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,policy_version:POLICY})});if(!r.ok)throw new Error(`API Error: ${r.statusText}`);return await r.json();}
+// --- Byte Counter API (v2.0) ---
+async function countBytes(text){const r=await fetch("/byte-count",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,normalize:false})});if(!r.ok)throw new Error(`API Error: ${r.statusText}`);return await r.json();}
+function renderByteResults(data){
+document.getElementById("byteBox").style.display="block";
+document.getElementById("byteUtf8").textContent=data.utf8_bytes.toLocaleString();
+const suspArea=document.getElementById("suspiciousArea");
+const suspList=document.getElementById("suspiciousList");
+if(data.suspicious && data.suspicious.length>0){
+suspArea.style.display="block";
+suspList.innerHTML=data.suspicious.map(s=>`<div class="suspicious-item">위치 ${s.index}: <b>${s.name}</b> (${s.codepoint})</div>`).join("");
+}else{
+suspArea.style.display="none";
+suspList.innerHTML="";
+}
+}
 // --- Hangul helpers for postposition (조사) auto-fix ---
 function _lastHangulHasBatchim(word){
 word = (word||"").trim();
@@ -571,10 +727,12 @@ const text = txtEl.value || "";
 this.textContent = "검사 중...";
 this.disabled = true;
 try {
-const res = await analyze(text);
+// 금칙어 검사 + 바이트 계산 동시 실행 (v2.0)
+const [res, byteRes] = await Promise.all([analyze(text), countBytes(text)]);
 currentHits = res.hits;
 document.getElementById("lat").textContent = `처리시간: ${res.latency_ms} ms`;
 renderResults(text, res.hits);
+renderByteResults(byteRes);
 const changedCount = currentHits.filter(h => h.replacement && h.confidence >= MIN_PREVIEW_CONF).length;
 document.getElementById("chg").textContent = `변경 ${changedCount}건`;
 const btnApply = document.getElementById("btnApplyAll");
@@ -619,3 +777,27 @@ def analyze(payload: AnalyzeRequest = Body(...)):
     final_hits = merge_hits(known_hits, hits_unknown)
     latency_ms = int((time.perf_counter() - t0) * 1000)
     return AnalyzeResponse(hits=final_hits, latency_ms=latency_ms)
+
+
+@app.post("/byte-count", response_model=ByteCountResponse, summary="Count bytes for student record (v2.0)")
+def byte_count(payload: ByteCountRequest = Body(...)):
+    """생활기록부 전용 바이트 계산기 - UTF-8 기준"""
+    result = analyze_bytes(payload.text)
+
+    normalized_text = None
+    normalized_bytes = None
+    if payload.normalize:
+        normalized_text = normalize_for_neis(payload.text, newline_mode=payload.newline_mode)
+        normalized_bytes = utf8_byte_len(normalized_text)
+
+    return ByteCountResponse(
+        utf8_bytes=result["utf8_bytes"],
+        char_count_including_spaces=result["char_count_including_spaces"],
+        char_count_excluding_spaces=result["char_count_excluding_spaces"],
+        newline_lf=result["newline_lf"],
+        newline_cr=result["newline_cr"],
+        tab=result["tab"],
+        suspicious=result["suspicious"],
+        normalized_text=normalized_text,
+        normalized_utf8_bytes=normalized_bytes,
+    )
