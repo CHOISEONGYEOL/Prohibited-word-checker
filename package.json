@@ -1,6 +1,6 @@
 {
   "name": "prohibited-word-checker",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "description": "성남 생활기록부 자동 점검 시스템",
   "scripts": {
     "dev": "python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000",

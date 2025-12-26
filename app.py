@@ -54,7 +54,7 @@ class AnalyzeResponse(BaseModel):
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="Seongnam LifeRec Checker", version="1.8.8")
+app = FastAPI(title="Seongnam LifeRec Checker", version="1.8.9")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -227,7 +227,7 @@ def detect_unknown_abbreviations(text: str, existing_hits: List[Hit]) -> List[Hi
         for i in range(h.start, h.end):
             covered.add(i)
 
-    for match in re.finditer(r'\b([A-Z]{2,10})\b', text):
+    for match in re.finditer(r'(?<![A-Za-z])([A-Z]{2,10})(?![A-Za-z])', text):
         abbrev = match.group(1)
         start, end = match.start(), match.end()
         if any(i in covered for i in range(start, end)):
@@ -412,10 +412,10 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생활기록부 자동 점검 – 데모 v1.8.8</title>
+<title>생활기록부 자동 점검 – 데모 v1.8.9</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}</style></head><body>
 <div class="wrap">
-<h1>성남 생활기록부 자동 점검 (데모 v1.8.8)</h1>
+<h1>성남 생활기록부 자동 점검 (데모 v1.8.9)</h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · 오른쪽에 <b>수정본 미리보기</b>와 <b>모두 적용</b>이 있어요</div>
 <textarea id="txt"></textarea>
