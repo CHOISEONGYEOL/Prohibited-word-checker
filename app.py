@@ -541,7 +541,12 @@ HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>생기부 금칙어 검사기 – v2.0.1</title>
-<style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}</style></head><body>
+<style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
+
+.panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.btn-mini{padding:6px 10px;border-radius:10px;font-size:12px;font-weight:700}
+
+</style></head><body>
 <div class="wrap">
 <h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.1)</span></h1>
 <div class="card">
@@ -569,7 +574,16 @@ HTML_PAGE = """
 </div>
 <div class="grid">
 <div class="panel"><div class="muted" style="margin-bottom:8px">하이라이트 결과(원문)</div><div id="view" style="line-height:1.8; white-space:pre-wrap;"></div></div>
-<div class="panel"><div class="muted" style="margin-bottom:8px">수정본 미리보기(대체어 적용)</div><div id="preview" style="line-height:1.8; white-space:pre-wrap;"></div></div>
+
+<div class="panel">
+  <div class="panel-head">
+    <div class="muted">수정본 미리보기(대체어 적용)</div>
+    <button id="btnCopyPreview" class="btn-mini" type="button">복사하기</button>
+  </div>
+  <div id="preview" style="line-height:1.8; white-space:pre-wrap;"></div>
+</div>
+
+
 <div class="panel"><div class="muted" style="margin-bottom:8px">근거 / 대체표현</div><div id="hits"></div></div>
 </div>
 </div>
@@ -577,9 +591,58 @@ HTML_PAGE = """
 <script>
 const POLICY="2024-03";
 const MIN_PREVIEW_CONF = 0.90; // 자동 치환 기준
+
+
 let currentHits = [];
 const txtEl = document.getElementById("txt");
+
+// --- Copy preview to clipboard ---
+const previewEl = document.getElementById("preview");
+const btnCopyPreview = document.getElementById("btnCopyPreview");
+
+btnCopyPreview.onclick = async function () {
+  const text = (previewEl && (previewEl.innerText || previewEl.textContent) || "").trim();
+  if (!text) {
+    alert("복사할 내용이 없습니다. 먼저 '검사'를 실행하세요.");
+    return;
+  }
+
+  // 1) Modern Clipboard API (works on https or localhost)
+  try {
+    await navigator.clipboard.writeText(text);
+    const old = this.textContent;
+    this.textContent = "복사됨";
+    setTimeout(() => (this.textContent = old), 1200);
+    return;
+  } catch (e) {
+    // 2) Fallback (older browsers / permission issues)
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+
+      const old = this.textContent;
+      this.textContent = "복사됨";
+      setTimeout(() => (this.textContent = old), 1200);
+      return;
+    } catch (e2) {
+      alert("복사에 실패했습니다. 브라우저 권한 설정을 확인하세요.");
+      console.error(e2);
+    }
+  }
+};
+
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+
+
 async function analyze(text){const r=await fetch("/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,policy_version:POLICY})});if(!r.ok)throw new Error(`API Error: ${r.statusText}`);return await r.json();}
 // --- Byte Counter API (v2.0) ---
 async function countBytes(text){const r=await fetch("/byte-count",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,normalize:false})});if(!r.ok)throw new Error(`API Error: ${r.statusText}`);return await r.json();}
