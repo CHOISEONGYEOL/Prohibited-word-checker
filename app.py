@@ -585,7 +585,8 @@ async function analyze(text){const r=await fetch("/analyze",{method:"POST",heade
 async function countBytes(text){const r=await fetch("/byte-count",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,normalize:false})});if(!r.ok)throw new Error(`API Error: ${r.statusText}`);return await r.json();}
 function renderByteResults(data){
 document.getElementById("byteBox").style.display="block";
-document.getElementById("byteUtf8").textContent=data.utf8_bytes.toLocaleString();
+document.getElementById("byteUtf8").textContent=(data.utf8_bytes + 32).toLocaleString();
+
 const suspArea=document.getElementById("suspiciousArea");
 const suspList=document.getElementById("suspiciousList");
 if(data.suspicious && data.suspicious.length>0){
