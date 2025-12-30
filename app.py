@@ -3,25 +3,10 @@ import time
 import re
 import unicodedata
 from typing import List, Optional, Dict
-import numpy as np
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-
-# --- AI Model Loading ---
-EMB_MODEL = os.getenv("EMB_MODEL", "intfloat/multilingual-e5-small")
-_embedder = None
-try:
-    from sentence_transformers import SentenceTransformer
-    print(f"Loading embedding model: {EMB_MODEL}...")
-    _embedder = SentenceTransformer(EMB_MODEL)
-    print("Model loaded successfully.")
-except Exception as e:
-    print(f"Warning: Failed to load sentence-transformer model: {e}")
-    print("Running in regex-only mode.")
-    _embedder = None
-# --- End of AI Model Loading ---
 
 # =========================
 # Pydantic Schemas
@@ -264,51 +249,6 @@ RULES = [
 # --- Preview/Apply thresholds ---
 MIN_PREVIEW_CONF = float(os.getenv("MIN_PREVIEW_CONF", "0.90"))
 
-# --- Korean token heuristics (to tame semantic) ---
-_JOSA_RE = re.compile(r"(으로|라서|라며|라고|이라|라|을|를|은|는|이|가|에|에서|에게|께서|로|와|과|도|만|까지|부터|처럼|보다|께|한테|에게서|이다|함)$")
-STOPWORDS_KO = {
-    "프로그램", "개발", "진행", "통해", "작성", "정리", "제출", "보고서",
-    "발표", "이동", "제작", "편집", "마무리", "활용", "참조", "옮겼다",
-    "초안", "정리하고", "옮김", "검토", "결과", "내용", "학습", "활동"
-}
-
-
-def _normalize_ko_token(tok: str) -> str:
-    if re.fullmatch(r"[가-힣]+", tok):
-        return _JOSA_RE.sub("", tok)
-    return tok
-
-
-def _should_consider_token(tok: str) -> bool:
-    base = _normalize_ko_token(tok)
-    if base in STOPWORDS_KO:
-        return False
-    if re.fullmatch(r"[가-힣]+", tok):
-        if not re.search(r"(톡|그램|북|넷플|왓챠|웨일온|유튭|유튜브|티빙|캔바|키네|틱톡|페북|인스타|클래스룸|코랩|주피터|파이참)$", base):
-            return False
-    return True
-
-
-# --- Build embedding alias index (for fuzzy) ---
-def _build_alias_index():
-    if _embedder is None:
-        return None, None
-    alias_rules, alias_texts = [], []
-    for rule in RULES:
-        for alias in rule.get("aliases", []):
-            if text := alias.strip():
-                alias_texts.append(text)
-                alias_rules.append(rule)
-    if not alias_texts:
-        return None, None
-    print(f"Building embedding index for {len(alias_texts)} aliases...")
-    alias_embeddings = _embedder.encode(alias_texts, normalize_embeddings=True, show_progress_bar=False)
-    print("Embedding index built successfully.")
-    return np.array(alias_embeddings, dtype=np.float32), alias_rules
-
-
-_ALIAS_EMB_INDEX, _ALIAS_RULES = _build_alias_index()
-
 # --- Build exact alias map (for safe auto-replace of common typos like 'yutube') ---
 _ALIAS_EXACT_MAP = {}
 for rule in RULES:
@@ -393,49 +333,6 @@ def alias_exact_match(text: str) -> List[Hit]:
             source=Source(doc=src.get("doc", ""), page=src.get("page"), quote=src.get("quote", "")),
             start=m.start(), end=m.end()
         ))
-    return hits
-
-
-def _get_semantic_candidates(text: str, min_len=2, max_len=30):
-    for match in re.finditer(r"\b[A-Za-z가-힣0-9][A-Za-z가-힣0-9\.\-_/()]*\b", text):
-        token = match.group(0).strip()
-        if not (min_len <= len(token) <= max_len):
-            continue
-        if not _should_consider_token(token):
-            continue
-        yield token, match.start(), match.end()
-
-
-def semantic_match(text: str, threshold: float = 0.86, max_hits: int = 10) -> List[Hit]:
-    if not (_embedder and _ALIAS_EMB_INDEX is not None):
-        return []
-    candidates = list(_get_semantic_candidates(text))
-    if not candidates:
-        return []
-    cand_tokens = [c[0] for c in candidates]
-    cand_embeddings = _embedder.encode(cand_tokens, normalize_embeddings=True, show_progress_bar=False)
-    sim_matrix = np.matmul(np.array(cand_embeddings, dtype=np.float32), _ALIAS_EMB_INDEX.T)
-    hits: List[Hit] = []
-    used_spans = set()
-    for i, row in enumerate(sim_matrix):
-        if len(hits) >= max_hits:
-            break
-        best_idx = int(np.argmax(row))
-        score = float(row[best_idx])
-        second = float(np.partition(row, -2)[-2]) if row.size > 1 else 0.0
-        if not (score >= threshold and (score - second) >= 0.06):
-            continue
-        span_text, start, end = candidates[i]
-        if (start, end) in used_spans:
-            continue
-        matched_rule = _ALIAS_RULES[best_idx]
-        conf = min(0.88, max(0.6, score * 0.85))  # < 0.90 → preview highlight only
-        hits.append(Hit(
-            span=span_text, label=matched_rule["label"], replacement=matched_rule.get("replacement"),
-            confidence=float(conf), source=Source(**matched_rule["source"]),
-            start=start, end=end
-        ))
-        used_spans.add((start, end))
     return hits
 
 
@@ -860,14 +757,10 @@ def analyze(payload: AnalyzeRequest = Body(...)):
     hits_alias = alias_exact_match(payload.text)
     # 3) Collapse parenthetical duplicates like '유엔(UN)'
     primary_hits = collapse_parenthetical_duplicates(payload.text, hits_rule + hits_alias)
-    # 4) Embedding Analysis Unit (conservative)
-    hits_semantic = semantic_match(payload.text)
-    # 5) Merge known hits
-    known_hits = merge_hits(primary_hits, hits_semantic)
-    # 6) Detect unknown abbreviations (v1.8.3)
-    hits_unknown = detect_unknown_abbreviations(payload.text, known_hits)
-    # 7) Final merge & respond
-    final_hits = merge_hits(known_hits, hits_unknown)
+    # 4) Detect unknown abbreviations
+    hits_unknown = detect_unknown_abbreviations(payload.text, primary_hits)
+    # 5) Final merge & respond
+    final_hits = merge_hits(primary_hits, hits_unknown)
     latency_ms = int((time.perf_counter() - t0) * 1000)
     return AnalyzeResponse(hits=final_hits, latency_ms=latency_ms)
 
