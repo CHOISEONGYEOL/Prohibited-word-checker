@@ -541,7 +541,43 @@ HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>생활기록부 자동 점검 – v2.0.1</title>
-<style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}</style></head><body>
+<style>
+/* 라이트 모드 (기본) */
+:root{--bg:#f8fafc;--card:#ffffff;--ink:#1e293b;--muted:#64748b;--accent:#3b82f6;--hit:#dc2626;--ok:#16a34a;--warn:#d97706;--panel-bg:#f1f5f9;--panel-border:#e2e8f0;--input-bg:#ffffff;--input-border:#cbd5e1;--pill-bg:#e2e8f0;--pill-text:#475569}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:1100px;margin:36px auto;padding:0 16px}
+.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+h1{margin:0 0 8px}
+.muted{color:var(--muted);font-size:12px}
+textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--ink);font-size:16px;resize:vertical}
+button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.6;cursor:not-allowed}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}
+@media (max-width: 900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:14px;padding:14px}
+mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}
+ins.rep{background:#dcfce7;color:#166534;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}
+.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--panel-border);padding:8px 0}
+.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--pill-bg);color:var(--pill-text)}
+.byte-box{background:linear-gradient(135deg,#f1f5f9 0%,#e2e8f0 100%);border:1px solid var(--panel-border);border-radius:14px;padding:16px;margin-top:12px}
+.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.byte-item{text-align:center;padding:12px;background:var(--card);border-radius:10px;border:1px solid var(--panel-border)}
+.byte-value{font-size:28px;font-weight:800;color:var(--accent)}
+.byte-label{font-size:11px;color:var(--muted);margin-top:4px}
+.byte-warn{color:var(--warn)}
+.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}
+.suspicious-item{padding:4px 0;border-bottom:1px dashed var(--panel-border)}
+
+/* 다크 모드 (시스템 설정 자동 감지) */
+@media (prefers-color-scheme:dark){
+:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00;--panel-bg:#0e1430;--panel-border:#263257;--input-bg:#0e1430;--input-border:#263257;--pill-bg:#1b2342;--pill-text:#c7d3ff}
+ins.rep{background:#0f2a1f;color:#b2ffd8}
+.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%)}
+.byte-item{background:#0b1020;border:none}
+}
+</style></head><body>
 <div class="wrap">
 <h1>생활기록부 자동 점검 <span style="font-size:14px;color:var(--accent)">(v2.0.1)</span></h1>
 <div class="card">
@@ -751,10 +787,67 @@ document.getElementById("btnSample").click();
 """
 
 # =========================
+# Launcher Page HTML
+# =========================
+LAUNCHER_HTML = """
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>교사 도구 모음</title>
+<style>
+/* 라이트 모드 (기본) */
+:root{--bg:#f8fafc;--card:#ffffff;--ink:#1e293b;--muted:#64748b;--accent:#3b82f6;--shadow:rgba(0,0,0,.1)}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+h1{font-size:2.5rem;margin-bottom:10px;text-align:center}
+.subtitle{color:var(--muted);margin-bottom:40px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:960px;width:100%}
+.card{background:var(--card);border-radius:20px;padding:32px;box-shadow:0 10px 30px var(--shadow);transition:transform .2s,box-shadow .2s;cursor:pointer;text-decoration:none;color:inherit;display:block;border:1px solid rgba(0,0,0,.05)}
+.card:hover{transform:translateY(-5px);box-shadow:0 15px 40px var(--shadow)}
+.card-icon{font-size:48px;margin-bottom:16px}
+.card-title{font-size:1.4rem;font-weight:700;margin-bottom:8px}
+.card-desc{color:var(--muted);font-size:14px;line-height:1.5}
+.footer{margin-top:40px;color:var(--muted);font-size:12px}
+
+/* 다크 모드 (시스템 설정 자동 감지) */
+@media (prefers-color-scheme: dark) {
+  :root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--shadow:rgba(0,0,0,.35)}
+  .card{border:1px solid rgba(255,255,255,.05)}
+}
+</style>
+</head><body>
+<h1>교사 도구 모음</h1>
+<p class="subtitle">원하는 도구를 선택하세요</p>
+<div class="grid">
+  <a href="/checker" class="card">
+    <div class="card-icon">📝</div>
+    <div class="card-title">생활기록부 검토기</div>
+    <div class="card-desc">생활기록부 오탈자 및 금칙어를 자동으로 검사하고 대체어를 제안합니다. 바이트 수도 함께 계산합니다.</div>
+  </a>
+  <a href="/blueprint" class="card">
+    <div class="card-icon">📊</div>
+    <div class="card-title">시험 블루프린트</div>
+    <div class="card-desc">시험 문항의 난이도별 배점을 자동으로 설계합니다. 3단계/5단계 난이도 체계를 지원합니다.</div>
+  </a>
+  <a href="/counter" class="card">
+    <div class="card-icon">🔢</div>
+    <div class="card-title">12345 카운터</div>
+    <div class="card-desc">객관식 정답 분포를 분석합니다. 특정 번호가 너무 많은지 확인하고 균형 잡힌 분포를 만드세요.</div>
+  </a>
+</div>
+<div class="footer">v3.0.0 - 교사 도구 통합 버전</div>
+</body></html>
+"""
+
+# =========================
 # API Routes
 # =========================
-@app.get("/", response_class=HTMLResponse, summary="Main UI Page")
-def home():
+@app.get("/", response_class=HTMLResponse, summary="Launcher Page")
+def launcher():
+    return LAUNCHER_HTML
+
+
+@app.get("/checker", response_class=HTMLResponse, summary="Prohibited Word Checker UI")
+def checker():
     return HTML_PAGE
 
 
@@ -801,3 +894,19 @@ def byte_count(payload: ByteCountRequest = Body(...)):
         normalized_text=normalized_text,
         normalized_utf8_bytes=normalized_bytes,
     )
+
+
+# =========================
+# Gradio App Mounting
+# =========================
+import gradio as gr
+from gradio_blueprint import create_blueprint_demo
+from gradio_counter import create_counter_demo
+
+# Create Gradio apps
+blueprint_demo = create_blueprint_demo()
+counter_demo = create_counter_demo()
+
+# Mount Gradio apps to FastAPI
+app = gr.mount_gradio_app(app, blueprint_demo, path="/blueprint")
+app = gr.mount_gradio_app(app, counter_demo, path="/counter")
