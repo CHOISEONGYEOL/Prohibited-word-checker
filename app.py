@@ -279,11 +279,11 @@ RULES = [
     # 직업선호도 검사
     {"pattern": r"(?:Holland|홀랜드)\s?검사", "label": "검사명", "replacement": "직업선호도 검사", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "Holland(홀랜드) 검사 등 → 직업선호도 검사"}, "aliases": ["홀란드검사", "홀랜드직업검사"]},
     # MBTI
-    {"pattern": r"(?:MBTI|엠비티아이)", "label": "검사명", "replacement": "성격유형 검사", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "MBTI(엠비티아이) 등 → 성격유형 검사"}, "aliases": ["mbti검사", "엠비티아이검사"]},
+    {"pattern": r"\b(?:MBTI|엠비티아이)\b", "label": "검사명", "replacement": "성격유형 검사", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "MBTI(엠비티아이) 등 → 성격유형 검사"}, "aliases": ["mbti검사", "엠비티아이검사"]},
     # HTML
-    {"pattern": r"(?:HTML|에이치티엠엘)", "label": "프로그램명", "replacement": "웹 페이지 제작 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "HTML(에이치티엠엘) 등 → 하이퍼텍스트 마크업 언어, 웹 페이지 제작 언어"}, "aliases": ["html5", "에치티엠엘"]},
+    {"pattern": r"\b(?:HTML|에이치티엠엘)\b", "label": "프로그램명", "replacement": "웹 페이지 제작 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "HTML(에이치티엠엘) 등 → 하이퍼텍스트 마크업 언어, 웹 페이지 제작 언어"}, "aliases": ["html5", "에치티엠엘"]},
     # CSS
-    {"pattern": r"(?:CSS|씨에스에스)", "label": "프로그램명", "replacement": "스타일 시트 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "CSS(씨에스에스) 등 → 스타일 시트 언어"}, "aliases": ["css3", "씨에쎄스"]},
+    {"pattern": r"\b(?:CSS|씨에스에스)\b", "label": "프로그램명", "replacement": "스타일 시트 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "CSS(씨에스에스) 등 → 스타일 시트 언어"}, "aliases": ["css3", "씨에쎄스"]},
     # 태블릿PC
     {"pattern": r"(?:iPad|아이패드|Galaxy\s?Tab|갤럭시\s?탭)", "label": "상호명", "replacement": "태블릿PC", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "iPad(아이패드), Galaxy Tab(갤럭시탭) 등 → 태블릿PC"}, "aliases": ["갤탭", "아이패드프로"]},
     # 크롬북
