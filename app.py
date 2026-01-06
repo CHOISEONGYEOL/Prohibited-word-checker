@@ -870,9 +870,9 @@ const segment = esc(text.slice(lastIndex));
 viewParts.push(segment);
 previewParts.push(segment);
 }
-document.getElementById("view").innerHTML = viewParts.join("").replace(/\\n/g, "<br>");
+document.getElementById("view").innerHTML = viewParts.join("").replace(/\n/g, "<br>");
 // v2.0.2: 미리보기에서 중복 대체어 제거
-let previewHtml = previewParts.join("").replace(/\\n/g, "<br>");
+let previewHtml = previewParts.join("").replace(/\n/g, "<br>");
 // 텍스트만 추출해서 중복 제거 후 다시 적용 (HTML 태그 보존)
 const previewEl = document.getElementById("preview");
 previewEl.innerHTML = previewHtml;
@@ -937,7 +937,7 @@ txtEl.value = text;
 document.getElementById("btn").click();
 }
 document.getElementById("btnSample").onclick = function() {
-txtEl.value = '유엔(UN) 보고서를 참조하여 챗GPT 초안 작성 후 MS워드 정리하고 Google Docs에 옮겼다.\\nZoom(웨일온)으로 발표하고 yutube·Instagram에 홍보했다.\\n이동은 KTX, 표지는 Canva 제작, 편집은 키네마스터 마무리했으며 소논문도 제출했다. 또한 Jupyter 통해 실험을 정리했고 CRISPR-Cas9 관련 내용을 참고했다. Java Script 및 JS도 사용했다.\\n토익을 시험봐서 좋은 점수를 받았고, TOEFL도 준비했다. 한자능력검정에서 2급을 취득했다.';
+txtEl.value = '유엔(UN) 보고서를 참조하여 챗GPT 초안 작성 후 MS워드 정리하고 Google Docs에 옮겼다.\nZoom(웨일온)으로 발표하고 yutube·Instagram에 홍보했다.\n이동은 KTX, 표지는 Canva 제작, 편집은 키네마스터 마무리했으며 소논문도 제출했다. 또한 Jupyter 통해 실험을 정리했고 CRISPR-Cas9 관련 내용을 참고했다. Java Script 및 JS도 사용했다.\n토익을 시험봐서 좋은 점수를 받았고, TOEFL도 준비했다. 한자능력검정에서 2급을 취득했다.';
 };
 document.getElementById("btn").onclick = async function() {
 const text = txtEl.value || "";
@@ -956,7 +956,7 @@ const btnApply = document.getElementById("btnApplyAll");
 btnApply.disabled = changedCount === 0;
 btnApply.onclick = applyAllReplacements;
 } catch (e) {
-alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.\\n(Hugging Face 컨테이너 기상 중일 수 있음)");
+alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.\n(서버 기상 중일 수 있음)");
 console.error(e);
 } finally {
 this.textContent = "검사";
