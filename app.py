@@ -183,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.0.6")
+app = FastAPI(title="LifeRec Checker", version="2.0.7")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -584,7 +584,7 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = r"""
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.0.6</title>
+<title>생기부 금칙어 검사기 – v2.0.7</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -592,7 +592,7 @@ HTML_PAGE = r"""
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.6)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.7)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
@@ -802,15 +802,38 @@ text = text.replace(/\n\s*\n/g, '\n');
 return text.trim();
 }
 
-// v2.0.6: 중복 대체어 병합 - "프로그래밍 언어 및 프로그래밍 언어" -> "프로그래밍 언어"
+// v2.0.7: 문맥상 어색한 조사 자동 보정
+function fixAwkwardParticles(text) {
+// "시험봐서" 등 앞에 주어가 없는 경우 삭제
+text = text.replace(/^\s*시험봐서/gm, '');
+// 문장 시작이 조사로 시작하는 경우 삭제
+text = text.replace(/^\s*(을|를|은|는|이|가|에서|에게|로|으로)\s+/gm, '');
+// 연속 조사 정리
+text = text.replace(/(을|를)\s+(을|를)/g, '$1');
+text = text.replace(/(은|는)\s+(은|는)/g, '$1');
+// 빈 괄호 제거
+text = text.replace(/\(\s*\)/g, '');
+// 연속 공백
+text = text.replace(/\s{2,}/g, ' ');
+return text.trim();
+}
+
+// v2.0.7: 중복 대체어 병합 - "프로그래밍 언어 및 프로그래밍 언어" -> "프로그래밍 언어"
 function removeDuplicateReplacements(text) {
 // 먼저 "및" 앞뒤에 공백이 없는 경우 공백 추가 (예: "언어및JS" -> "언어 및 JS")
 text = text.replace(/(\S)및(\S)/g, '$1 및 $2');
 text = text.replace(/(\S)및\s/g, '$1 및 ');
 text = text.replace(/\s및(\S)/g, ' 및 $1');
 
+// v2.0.7: "프로그래밍 언어 및 프로그래밍 언어도" -> "프로그래밍 언어도" (조사 포함)
+text = text.replace(/(프로그래밍 언어)\s*및\s*\1(도|를|을|은|는|이|가|로|으로)?/g, '$1$2');
+text = text.replace(/(프로그래밍 언어)(도|를|을|은|는|이|가|로|으로)?\s*및\s*\1/g, '$1');
+
 // 패턴: 2~3단어로 이루어진 대체어 중복 제거 (예: "프로그래밍 언어 및 프로그래밍 언어")
 const patterns = [
+// 2단어 이상 대체어 + 조사 포함
+/(\S+\s+\S+)\s*및\s*\1(도|를|을|은|는|이|가)?/g,
+/(\S+\s+\S+)(도|를|을|은|는|이|가)?\s*및\s*\1/g,
 // 2단어 이상 대체어: "프로그래밍 언어 및 프로그래밍 언어"
 /(\S+\s+\S+)\s*및\s*\1/g,
 /(\S+\s+\S+)\s*,\s*\1/g,
@@ -825,8 +848,11 @@ const patterns = [
 /(\S+)\s*과\s*\1/g,
 ];
 let result = text;
+// 여러 번 반복 적용 (중첩된 경우 대비)
+for (let i = 0; i < 3; i++) {
 for (const p of patterns) {
-result = result.replace(p, '$1');
+result = result.replace(p, '$1$2');
+}
 }
 // 연속 동일 2단어 제거 (예: "프로그래밍 언어 프로그래밍 언어")
 result = result.replace(/(\S+\s+\S+)\s+\1/g, '$1');
@@ -834,45 +860,52 @@ result = result.replace(/(\S+\s+\S+)\s+\1/g, '$1');
 result = result.replace(/(\S+)\s+\1/g, '$1');
 // "X도 사용했다" 에서 X가 대체어와 같으면 "X도 사용했다"로 정리
 result = result.replace(/(\S+\s+\S+)\s*도\s+\1/g, '$1');
+// undefined 제거 (캡처 그룹이 없는 경우)
+result = result.replace(/undefined/g, '');
 return result;
 }
 
 function renderResults(text, hits) {
 const sortedHits = [...hits].sort((a, b) => a.start - b.start);
-let lastIndex = 0;
+let viewLastIndex = 0;  // v2.0.7: 원문용 별도 인덱스
+let previewLastIndex = 0;  // v2.0.7: 미리보기용 별도 인덱스
 const viewParts = [];
 const previewParts = [];
 for (const hit of sortedHits) {
-if (hit.start < lastIndex) continue; // overlapped (safety)
-if (hit.start > lastIndex) {
-const segment = esc(text.slice(lastIndex, hit.start));
-viewParts.push(segment);
-previewParts.push(segment);
+if (hit.start < viewLastIndex) continue; // overlapped (safety)
+
+// v2.0.7: 원문은 항상 원본 텍스트 그대로 (조사 포함)
+if (hit.start > viewLastIndex) {
+viewParts.push(esc(text.slice(viewLastIndex, hit.start)));
 }
-// always show original highlight in "원문"
 viewParts.push(`<mark title="${esc(hit.label)}">${esc(hit.span)}</mark>`);
+viewLastIndex = hit.end;
+
+// v2.0.7: 미리보기는 별도 처리
+if (hit.start > previewLastIndex) {
+previewParts.push(esc(text.slice(previewLastIndex, hit.start)));
+}
 
 // v2.0.2: 삭제 처리 (replacement가 빈 문자열인 경우)
 const isDelete = hit.replacement === "" && hit.delete_with_particle;
 const canReplace = (hit.replacement !== null && hit.replacement !== undefined) && (hit.confidence >= MIN_PREVIEW_CONF);
 
 if (isDelete && hit.confidence >= MIN_PREVIEW_CONF) {
-// 삭제 시 뒤따르는 조사도 함께 삭제
+// 삭제 시 뒤따르는 조사도 함께 삭제 (미리보기에서만)
 const look = text.slice(hit.end, hit.end+3);
 const m = look.match(PARTICLE_PATTERN);
 if(m){
-lastIndex = hit.end + m[0].length;
+previewLastIndex = hit.end + m[0].length;
 // 조사 삭제 후 남은 공백 처리
-const nextChar = text[lastIndex];
+const nextChar = text[previewLastIndex];
 if(nextChar === ' ') {
-// 앞에 공백이 있으면 하나만 남김
 const prevPart = previewParts[previewParts.length - 1] || '';
 if(prevPart.endsWith(' ') || prevPart.endsWith('&gt;')) {
-lastIndex++; // skip extra space
+previewLastIndex++;
 }
 }
 }else{
-lastIndex = hit.end;
+previewLastIndex = hit.end;
 }
 // 삭제된 내용은 preview에 아무것도 추가하지 않음 (완전 삭제)
 } else if (canReplace && hit.replacement !== "") {
@@ -881,34 +914,35 @@ const m = look.match(/^(으로|로|을|를|은|는|이|가|과|와)/);
 if(m){
 const appended = chooseParticle(hit.replacement, m[0]);
 previewParts.push(`<ins class="rep" title="${esc(hit.label)}">${esc(hit.replacement + appended)}</ins>`);
-lastIndex = hit.end + m[0].length;
+previewLastIndex = hit.end + m[0].length;
 }else{
 previewParts.push(`<ins class="rep" title="${esc(hit.label)}">${esc(hit.replacement)}</ins>`);
-lastIndex = hit.end;
+previewLastIndex = hit.end;
 }
 } else {
 previewParts.push(`<mark title="${esc(hit.label)}">${esc(hit.span)}</mark>`);
-lastIndex = hit.end;
+previewLastIndex = hit.end;
 }
 }
-if (lastIndex < text.length) {
-const segment = esc(text.slice(lastIndex));
-viewParts.push(segment);
-previewParts.push(segment);
+// v2.0.7: 원문과 미리보기 각각 나머지 텍스트 추가
+if (viewLastIndex < text.length) {
+viewParts.push(esc(text.slice(viewLastIndex)));
+}
+if (previewLastIndex < text.length) {
+previewParts.push(esc(text.slice(previewLastIndex)));
 }
 document.getElementById("view").innerHTML = viewParts.join("").replace(/\n/g, "<br>");
-// v2.0.2: 미리보기에서 중복 대체어 제거
+// v2.0.7: 미리보기에서 중복 대체어 제거 (전체 텍스트 기준)
 let previewHtml = previewParts.join("").replace(/\n/g, "<br>");
-// 텍스트만 추출해서 중복 제거 후 다시 적용 (HTML 태그 보존)
 const previewEl = document.getElementById("preview");
 previewEl.innerHTML = previewHtml;
-// 텍스트 노드에서 중복 대체어 제거 및 어색한 문장 정리
-const walker = document.createTreeWalker(previewEl, NodeFilter.SHOW_TEXT, null, false);
-while(walker.nextNode()) {
-let cleaned = removeDuplicateReplacements(walker.currentNode.textContent);
-cleaned = cleanupAfterDeletion(cleaned);
-walker.currentNode.textContent = cleaned;
-}
+// v2.0.7: 전체 텍스트를 추출해서 중복 제거 후 다시 적용
+let fullText = previewEl.innerText || previewEl.textContent;
+fullText = removeDuplicateReplacements(fullText);
+fullText = cleanupAfterDeletion(fullText);
+fullText = fixAwkwardParticles(fullText);  // v2.0.7: 조사 보정
+// HTML 없이 순수 텍스트로 표시 (대체어 스타일은 제거되지만 정확한 결과 우선)
+previewEl.innerHTML = esc(fullText).replace(/\n/g, "<br>");
 const hitsEl = document.getElementById("hits");
 hitsEl.innerHTML = "";
 if (!hits.length) {
