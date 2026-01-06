@@ -183,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.0.3")
+app = FastAPI(title="LifeRec Checker", version="2.0.4")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -265,6 +265,31 @@ RULES = [
     {"pattern": r"(?:TORFL|토르플)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
     {"pattern": r"(?:DELE|델레)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
     {"pattern": r"(?:상공회의소\s?한자시험|한자능력검정|실용한자|한자급수자격검정|YBM\s?상무한검|한자급수인증시험|한자자격검정)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["한자시험", "한검"], "delete_with_particle": True},
+    # --- v2.0.4: 누락된 기재 유의어 전체 추가 ---
+    # 메타버스 플랫폼
+    {"pattern": r"(?:Gather\s?Town|개더타운|ZEPETO|제페토|ifland|이프랜드)", "label": "상호명", "replacement": "메타버스 플랫폼", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "Gather Town(개더타운), ZEPETO(제페토) 등 → 메타버스 플랫폼"}, "aliases": ["게더타운", "제페토앱"]},
+    # Google TV 추가
+    {"pattern": r"(?:Google\s?TV|구글\s?티비)", "label": "상호명", "replacement": "동영상 플랫폼", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "Google TV(구글 티비) 등 → 동영상 플랫폼"}, "aliases": []},
+    # 영상 편집 프로그램 추가 (Vllo, Final Cut Pro)
+    {"pattern": r"(?:Vllo|블로|Final\s?Cut\s?Pro|파이널\s?컷\s?프로)", "label": "프로그램명", "replacement": "영상 편집 프로그램", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "Vllo(블로), Final Cut Pro(파이널 컷 프로) 등 → 영상 편집 프로그램"}, "aliases": ["파컷프로", "fcpx"]},
+    # 협업 플랫폼
+    {"pattern": r"(?:Padlet|패들렛|ThinkerBell|띵커벨|Allo|알로)", "label": "상호명", "replacement": "온라인 협업 플랫폼", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "Padlet(패들렛), ThinkerBell(띵커벨), Allo(알로) 등 → 협업 플랫폼"}, "aliases": ["패들릿"]},
+    # 진로정보망
+    {"pattern": r"(?:careernet|커리어넷|majormap|메이저맵)", "label": "상호명", "replacement": "진로 정보 사이트", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "careernet(커리어넷), majormap(메이저맵) 등 → 진로정보망, 진로 정보 사이트"}, "aliases": ["커리어넷검사", "메이저맵검사"]},
+    # 직업선호도 검사
+    {"pattern": r"(?:Holland|홀랜드)\s?검사", "label": "검사명", "replacement": "직업선호도 검사", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "Holland(홀랜드) 검사 등 → 직업선호도 검사"}, "aliases": ["홀란드검사", "홀랜드직업검사"]},
+    # MBTI
+    {"pattern": r"(?:MBTI|엠비티아이)", "label": "검사명", "replacement": "성격유형 검사", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "MBTI(엠비티아이) 등 → 성격유형 검사"}, "aliases": ["mbti검사", "엠비티아이검사"]},
+    # HTML
+    {"pattern": r"(?:HTML|에이치티엠엘)", "label": "프로그램명", "replacement": "웹 페이지 제작 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "HTML(에이치티엠엘) 등 → 하이퍼텍스트 마크업 언어, 웹 페이지 제작 언어"}, "aliases": ["html5", "에치티엠엘"]},
+    # CSS
+    {"pattern": r"(?:CSS|씨에스에스)", "label": "프로그램명", "replacement": "스타일 시트 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "CSS(씨에스에스) 등 → 스타일 시트 언어"}, "aliases": ["css3", "씨에쎄스"]},
+    # 태블릿PC
+    {"pattern": r"(?:iPad|아이패드|Galaxy\s?Tab|갤럭시\s?탭)", "label": "상호명", "replacement": "태블릿PC", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "iPad(아이패드), Galaxy Tab(갤럭시탭) 등 → 태블릿PC"}, "aliases": ["갤탭", "아이패드프로"]},
+    # 크롬북
+    {"pattern": r"(?:chrome\s?book|크롬북)", "label": "상호명", "replacement": "휴대용 컴퓨터", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "chrome book(크롬북) 등 → 휴대용 컴퓨터"}, "aliases": ["chromebook"]},
+    # 가상화폐
+    {"pattern": r"(?:Altcoin|알트코인|Bitcoin|비트코인|이더리움|Ethereum|리플|Ripple|도지코인|Dogecoin)", "label": "상호명", "replacement": "가상화폐", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "Altcoin(알트코인), Bitcoin(비트코인) 등 → 가상화폐"}, "aliases": ["비코", "잡코인", "암호화폐"]},
 ]
 
 # =========================
@@ -551,7 +576,7 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.0.3</title>
+<title>생기부 금칙어 검사기 – v2.0.4</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -559,7 +584,7 @@ HTML_PAGE = """
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.3)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.4)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
