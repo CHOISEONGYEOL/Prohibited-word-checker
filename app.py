@@ -183,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.0.2")
+app = FastAPI(title="LifeRec Checker", version="2.0.3")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -551,7 +551,7 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.0.2</title>
+<title>생기부 금칙어 검사기 – v2.0.3</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -559,7 +559,7 @@ HTML_PAGE = """
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.2)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.3)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
@@ -727,10 +727,48 @@ appended: ""
 // v2.0.2: 조사 패턴 (삭제 시 함께 삭제)
 const PARTICLE_PATTERN = /^(으로|에서|에게|라서|라며|라고|이라|로|을|를|은|는|이|가|과|와|에|도|만|까지|부터|처럼|보다|께|한테|라)/;
 
+// v2.0.3: 금지어 삭제 후 어색한 문장 정리
+function cleanupAfterDeletion(text) {
+// 1. 빈 절 제거: ", 준비했다" -> "" 또는 "준비했다"로 정리
+// 쉼표 뒤에 바로 동사/서술어만 남은 경우 해당 절 전체 삭제
+text = text.replace(/,\s*(시험봐서|준비했다|취득했다|응시했다|합격했다|불합격했다|통과했다)[^,.\n]*/g, '');
+
+// 2. 문장 시작이 어색한 경우 정리
+text = text.replace(/^\s*(시험봐서|준비했다|취득했다|응시했다)[^,.\n]*[,.]\s*/gm, '');
+
+// 3. 의미없는 조각 문장 제거: "좋은 점수를 받았고," 같은 것
+text = text.replace(/,\s*,/g, ',');
+text = text.replace(/\.\s*\./g, '.');
+text = text.replace(/,\s*\./g, '.');
+
+// 4. 숫자+급/점 만 남은 경우 제거 (예: "2급을 취득했다" -> 금지어 삭제 후 "2급을 취득했다"는 유지하되 앞에 시험명이 없으면 어색)
+// "에서 2급" 같이 시험명이 빠진 경우
+text = text.replace(/에서\s+\d+급/g, '');
+text = text.replace(/에서\s+\d+점/g, '');
+
+// 5. 연속 공백 정리
+text = text.replace(/\s{2,}/g, ' ');
+
+// 6. 문장 시작 공백 제거
+text = text.replace(/^\s+/gm, '');
+
+// 7. 쉼표로 시작하는 문장 정리
+text = text.replace(/^,\s*/gm, '');
+
+return text.trim();
+}
+
 // v2.0.2: 중복 대체어 병합 - "프로그래밍 언어 및 프로그래밍 언어" -> "프로그래밍 언어"
 function removeDuplicateReplacements(text) {
-// 패턴: "대체어 및 대체어" 또는 "대체어, 대체어" 형태 병합
+// 패턴: 2~3단어로 이루어진 대체어 중복 제거 (예: "프로그래밍 언어 및 프로그래밍 언어")
 const patterns = [
+// 2단어 이상 대체어: "프로그래밍 언어 및 프로그래밍 언어"
+/(\S+\s+\S+)\s+및\s+\1/g,
+/(\S+\s+\S+),\s*\1/g,
+/(\S+\s+\S+)\s+그리고\s+\1/g,
+/(\S+\s+\S+)\s+와\s+\1/g,
+/(\S+\s+\S+)\s+과\s+\1/g,
+// 1단어 대체어
 /(\S+)\s+및\s+\1/g,
 /(\S+),\s*\1/g,
 /(\S+)\s+그리고\s+\1/g,
@@ -741,7 +779,9 @@ let result = text;
 for (const p of patterns) {
 result = result.replace(p, '$1');
 }
-// 연속 동일 단어 제거 (띄어쓰기로 구분)
+// 연속 동일 2단어 제거 (예: "프로그래밍 언어 프로그래밍 언어")
+result = result.replace(/(\S+\s+\S+)\s+\1/g, '$1');
+// 연속 동일 1단어 제거
 result = result.replace(/(\S+)\s+\1/g, '$1');
 return result;
 }
@@ -811,10 +851,12 @@ let previewHtml = previewParts.join("").replace(/\\n/g, "<br>");
 // 텍스트만 추출해서 중복 제거 후 다시 적용 (HTML 태그 보존)
 const previewEl = document.getElementById("preview");
 previewEl.innerHTML = previewHtml;
-// 텍스트 노드에서 중복 대체어 제거
+// 텍스트 노드에서 중복 대체어 제거 및 어색한 문장 정리
 const walker = document.createTreeWalker(previewEl, NodeFilter.SHOW_TEXT, null, false);
 while(walker.nextNode()) {
-walker.currentNode.textContent = removeDuplicateReplacements(walker.currentNode.textContent);
+let cleaned = removeDuplicateReplacements(walker.currentNode.textContent);
+cleaned = cleanupAfterDeletion(cleaned);
+walker.currentNode.textContent = cleaned;
 }
 const hitsEl = document.getElementById("hits");
 hitsEl.innerHTML = "";
@@ -862,6 +904,8 @@ text = sp.newText;
 }
 // v2.0.2: 중복 대체어 제거
 text = removeDuplicateReplacements(text);
+// v2.0.3: 어색한 문장 정리
+text = cleanupAfterDeletion(text);
 // 연속 공백 정리
 text = text.replace(/  +/g, ' ').trim();
 txtEl.value = text;
@@ -881,7 +925,7 @@ currentHits = res.hits;
 document.getElementById("lat").textContent = `처리시간: ${res.latency_ms} ms`;
 renderResults(text, res.hits);
 renderByteResults(byteRes);
-const changedCount = currentHits.filter(h => h.replacement && h.confidence >= MIN_PREVIEW_CONF).length;
+const changedCount = currentHits.filter(h => (h.replacement !== null && h.replacement !== undefined) && h.confidence >= MIN_PREVIEW_CONF).length;
 document.getElementById("chg").textContent = `변경 ${changedCount}건`;
 const btnApply = document.getElementById("btnApplyAll");
 btnApply.disabled = changedCount === 0;
