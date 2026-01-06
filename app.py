@@ -183,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.0.5")
+app = FastAPI(title="LifeRec Checker", version="2.0.6")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -264,7 +264,15 @@ RULES = [
     {"pattern": r"(?:ZD|TESTDAF|DSH|DSD|테스트다프)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
     {"pattern": r"(?:TORFL|토르플)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
     {"pattern": r"(?:DELE|델레)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
-    {"pattern": r"(?:상공회의소\s?한자시험|한자능력검정|실용한자|한자급수자격검정|YBM\s?상무한검|한자급수인증시험|한자자격검정)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["한자시험", "한검"], "delete_with_particle": True},
+    {"pattern": r"(?:상공회의소\s?한자시험|한자능력검정|한능검|실용한자|한자급수자격검정|YBM\s?상무한검|한자급수인증시험|한자자격검정)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["한자시험", "한검", "한능검시험"], "delete_with_particle": True},
+    # v2.0.6: 추가 어학시험 약어
+    {"pattern": r"(?:OPIC|오픽|OPIc)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["오픽시험", "오픽점수"], "delete_with_particle": True},
+    {"pattern": r"(?:FLEX|플렉스)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["플렉스시험"], "delete_with_particle": True},
+    {"pattern": r"(?:SNULT|스널트)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:IELTS|아이엘츠)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["아엘츠"], "delete_with_particle": True},
+    {"pattern": r"(?:TOPIK|토픽|한국어능력시험)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["토픽시험"], "delete_with_particle": True},
+    {"pattern": r"(?:GTQ|지티큐|ITQ|아이티큐)", "label": "자격시험", "replacement": "", "confidence": 0.99, "source": {"doc": "자격시험 기재불가", "page": 1, "quote": "민간자격시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:MOS|모스|컴활|컴퓨터활용능력|워드프로세서|워프)", "label": "자격시험", "replacement": "", "confidence": 0.99, "source": {"doc": "자격시험 기재불가", "page": 1, "quote": "민간자격시험 성적 기재 불가"}, "aliases": ["컴활시험", "모스자격증"], "delete_with_particle": True},
     # --- v2.0.4: 누락된 기재 유의어 전체 추가 ---
     # 메타버스 플랫폼
     {"pattern": r"(?:Gather\s?Town|개더타운|ZEPETO|제페토|ifland|이프랜드)", "label": "상호명", "replacement": "메타버스 플랫폼", "confidence": 0.95, "source": {"doc": "대체표현", "page": 1, "quote": "Gather Town(개더타운), ZEPETO(제페토) 등 → 메타버스 플랫폼"}, "aliases": ["게더타운", "제페토앱"]},
@@ -576,7 +584,7 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = r"""
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.0.5</title>
+<title>생기부 금칙어 검사기 – v2.0.6</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -584,7 +592,7 @@ HTML_PAGE = r"""
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.5)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.6)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
@@ -752,53 +760,69 @@ appended: ""
 // v2.0.2: 조사 패턴 (삭제 시 함께 삭제)
 const PARTICLE_PATTERN = /^(으로|에서|에게|라서|라며|라고|이라|로|을|를|은|는|이|가|과|와|에|도|만|까지|부터|처럼|보다|께|한테|라)/;
 
-// v2.0.3: 금지어 삭제 후 어색한 문장 정리
+// v2.0.6: 금지어 삭제 후 어색한 문장 정리 (강화)
 function cleanupAfterDeletion(text) {
-// 1. 빈 절 제거: ", 준비했다" -> "" 또는 "준비했다"로 정리
-// 쉼표 뒤에 바로 동사/서술어만 남은 경우 해당 절 전체 삭제
+// 1. 시험 관련 문장 패턴 완전 삭제
+// "시험봐서 좋은 점수를 받았고" 같은 패턴
+text = text.replace(/시험봐서[^.]*?(받았고|받았다|받음)[,.]?\s*/g, '');
+text = text.replace(/준비했다[,.]?\s*/g, '');
+text = text.replace(/도\s*준비했다[,.]?\s*/g, '');
+
+// 2. "N급을 취득했다", "N점을 받았다" 등 앞에 시험명이 없으면 삭제
+text = text.replace(/\d+급을?\s*(취득했다|취득함|땄다|딸 수 있었다)[,.]?\s*/g, '');
+text = text.replace(/\d+점을?\s*(받았다|취득했다|획득했다)[,.]?\s*/g, '');
+text = text.replace(/에서\s*\d+급/g, '');
+text = text.replace(/에서\s*\d+점/g, '');
+
+// 3. 빈 절 제거: ", 준비했다" -> ""
 text = text.replace(/,\s*(시험봐서|준비했다|취득했다|응시했다|합격했다|불합격했다|통과했다)[^,.\n]*/g, '');
 
-// 2. 문장 시작이 어색한 경우 정리
+// 4. 문장 시작이 어색한 경우 정리
 text = text.replace(/^\s*(시험봐서|준비했다|취득했다|응시했다)[^,.\n]*[,.]\s*/gm, '');
 
-// 3. 의미없는 조각 문장 제거: "좋은 점수를 받았고," 같은 것
+// 5. 의미없는 조각 문장 제거
 text = text.replace(/,\s*,/g, ',');
 text = text.replace(/\.\s*\./g, '.');
 text = text.replace(/,\s*\./g, '.');
+text = text.replace(/^\s*,\s*/gm, '');
+text = text.replace(/,\s*$/gm, '.');
 
-// 4. 숫자+급/점 만 남은 경우 제거 (예: "2급을 취득했다" -> 금지어 삭제 후 "2급을 취득했다"는 유지하되 앞에 시험명이 없으면 어색)
-// "에서 2급" 같이 시험명이 빠진 경우
-text = text.replace(/에서\s+\d+급/g, '');
-text = text.replace(/에서\s+\d+점/g, '');
+// 6. "좋은 점수를 받았고," 처럼 앞 문맥이 삭제된 경우
+text = text.replace(/^\s*좋은 점수를 받았고[,.]?\s*/gm, '');
 
-// 5. 연속 공백 정리
+// 7. 연속 공백 정리
 text = text.replace(/\s{2,}/g, ' ');
 
-// 6. 문장 시작 공백 제거
+// 8. 문장 시작 공백 제거
 text = text.replace(/^\s+/gm, '');
 
-// 7. 쉼표로 시작하는 문장 정리
-text = text.replace(/^,\s*/gm, '');
+// 9. 빈 줄 제거
+text = text.replace(/\n\s*\n/g, '\n');
 
 return text.trim();
 }
 
-// v2.0.2: 중복 대체어 병합 - "프로그래밍 언어 및 프로그래밍 언어" -> "프로그래밍 언어"
+// v2.0.6: 중복 대체어 병합 - "프로그래밍 언어 및 프로그래밍 언어" -> "프로그래밍 언어"
 function removeDuplicateReplacements(text) {
+// 먼저 "및" 앞뒤에 공백이 없는 경우 공백 추가 (예: "언어및JS" -> "언어 및 JS")
+text = text.replace(/(\S)및(\S)/g, '$1 및 $2');
+text = text.replace(/(\S)및\s/g, '$1 및 ');
+text = text.replace(/\s및(\S)/g, ' 및 $1');
+
 // 패턴: 2~3단어로 이루어진 대체어 중복 제거 (예: "프로그래밍 언어 및 프로그래밍 언어")
 const patterns = [
 // 2단어 이상 대체어: "프로그래밍 언어 및 프로그래밍 언어"
-/(\S+\s+\S+)\s+및\s+\1/g,
-/(\S+\s+\S+),\s*\1/g,
-/(\S+\s+\S+)\s+그리고\s+\1/g,
-/(\S+\s+\S+)\s+와\s+\1/g,
-/(\S+\s+\S+)\s+과\s+\1/g,
+/(\S+\s+\S+)\s*및\s*\1/g,
+/(\S+\s+\S+)\s*,\s*\1/g,
+/(\S+\s+\S+)\s*그리고\s*\1/g,
+/(\S+\s+\S+)\s*와\s*\1/g,
+/(\S+\s+\S+)\s*과\s*\1/g,
 // 1단어 대체어
-/(\S+)\s+및\s+\1/g,
-/(\S+),\s*\1/g,
-/(\S+)\s+그리고\s+\1/g,
-/(\S+)\s+와\s+\1/g,
-/(\S+)\s+과\s+\1/g,
+/(\S+)\s*및\s*\1/g,
+/(\S+)\s*,\s*\1/g,
+/(\S+)\s*그리고\s*\1/g,
+/(\S+)\s*와\s*\1/g,
+/(\S+)\s*과\s*\1/g,
 ];
 let result = text;
 for (const p of patterns) {
@@ -808,6 +832,8 @@ result = result.replace(p, '$1');
 result = result.replace(/(\S+\s+\S+)\s+\1/g, '$1');
 // 연속 동일 1단어 제거
 result = result.replace(/(\S+)\s+\1/g, '$1');
+// "X도 사용했다" 에서 X가 대체어와 같으면 "X도 사용했다"로 정리
+result = result.replace(/(\S+\s+\S+)\s*도\s+\1/g, '$1');
 return result;
 }
 
@@ -937,7 +963,7 @@ txtEl.value = text;
 document.getElementById("btn").click();
 }
 document.getElementById("btnSample").onclick = function() {
-txtEl.value = "유엔(UN) 보고서를 참조하여 챗GPT 초안 작성 후 MS워드 정리하고 Google Docs에 옮겼다.\nZoom(웨일온)으로 발표하고 yutube·Instagram에 홍보했다.\n이동은 KTX, 표지는 Canva 제작, 편집은 키네마스터 마무리했으며 소논문도 제출했다. 또한 Jupyter 통해 실험을 정리했고 CRISPR-Cas9 관련 내용을 참고했다. Java Script 및 JS도 사용했다.\n토익을 시험봐서 좋은 점수를 받았고, TOEFL도 준비했다. 한자능력검정에서 2급을 취득했다.";
+txtEl.value = "유엔(UN) 보고서를 참조하여 챗GPT 초안 작성 후 MS워드 정리하고 Google Docs에 옮겼다.\nZoom(웨일온)으로 발표하고 yutube·Instagram에 홍보했다.\n이동은 KTX, 표지는 Canva 제작, 편집은 키네마스터 마무리했으며 소논문도 제출했다. 또한 Jupyter 통해 실험을 정리했고 CRISPR-Cas9 관련 내용을 참고했다. Java Script 및 JS도 사용했다.\n토익을 시험봐서 좋은 점수를 받았고, TOEFL도 준비했다. 한능검에서 2급을 취득했다.";
 };
 document.getElementById("btn").onclick = async function() {
 const text = txtEl.value || "";
