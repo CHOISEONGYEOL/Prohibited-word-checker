@@ -40,6 +40,7 @@ class Hit(BaseModel):
     source: Source
     start: int
     end: int
+    delete_with_particle: bool = False  # v2.0.2: 삭제 시 조사도 함께 삭제
 
 
 class AnalyzeRequest(BaseModel):
@@ -182,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.0.1")
+app = FastAPI(title="LifeRec Checker", version="2.0.2")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -255,6 +256,15 @@ RULES = [
     {"pattern": r"\bPCR\b", "label": "전문 약어", "replacement": "중합효소연쇄반응", "confidence": 0.95, "source": {"doc": "전문 약어", "page": 1, "quote": "전문 약어는 한글 풀이로 대체"}, "aliases": []},
     # --- 학술 용어(일반화) ---
     {"pattern": r"(?:CRISPR-?Cas9|크리스퍼-?카스9?)", "label": "전문 용어", "replacement": "유전자 가위 기술", "confidence": 0.93, "source": {"doc": "학술 용어 일반화", "page": 1, "quote": "과도한 전문용어는 일반화/설명적 표현 사용 권장"}, "aliases": ["crispr", "cas9", "크리스퍼"]},
+    # --- 기재불가 공인어학시험 (v2.0.2) ---
+    {"pattern": r"(?:TOEIC|TOEFL|TEPS|토익|토플|탭스|토익시험|토플시험|탭스시험)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["토익점수", "토플점수", "탭스점수"], "delete_with_particle": True},
+    {"pattern": r"(?:HSK|에이치에스케이)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:JPT|JLPT|제이피티|제이엘피티)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:DELF|DALF|델프|달프)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:ZD|TESTDAF|DSH|DSD|테스트다프)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:TORFL|토르플)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:DELE|델레)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": [], "delete_with_particle": True},
+    {"pattern": r"(?:상공회의소\s?한자시험|한자능력검정|실용한자|한자급수자격검정|YBM\s?상무한검|한자급수인증시험|한자자격검정)", "label": "공인어학시험", "replacement": "", "confidence": 0.99, "source": {"doc": "어학시험 기재불가", "page": 1, "quote": "공인어학시험 성적 기재 불가"}, "aliases": ["한자시험", "한검"], "delete_with_particle": True},
 ]
 
 # =========================
@@ -327,7 +337,8 @@ def regex_match(text: str) -> List[Hit]:
                 span=match.group(0), label=rule["label"], replacement=rule.get("replacement"),
                 confidence=float(rule.get("confidence", 0.9)),
                 source=Source(doc=src.get("doc", ""), page=src.get("page"), quote=src.get("quote", "")),
-                start=match.start(), end=match.end()
+                start=match.start(), end=match.end(),
+                delete_with_particle=rule.get("delete_with_particle", False)
             ))
     return hits
 
@@ -540,7 +551,7 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = """
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.0.1</title>
+<title>생기부 금칙어 검사기 – v2.0.2</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -548,7 +559,7 @@ HTML_PAGE = """
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.1)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.2)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
@@ -713,6 +724,28 @@ skip: 0,
 appended: ""
 };
 }
+// v2.0.2: 조사 패턴 (삭제 시 함께 삭제)
+const PARTICLE_PATTERN = /^(으로|에서|에게|라서|라며|라고|이라|로|을|를|은|는|이|가|과|와|에|도|만|까지|부터|처럼|보다|께|한테|라)/;
+
+// v2.0.2: 중복 대체어 병합 - "프로그래밍 언어 및 프로그래밍 언어" -> "프로그래밍 언어"
+function removeDuplicateReplacements(text) {
+// 패턴: "대체어 및 대체어" 또는 "대체어, 대체어" 형태 병합
+const patterns = [
+/(\S+)\s+및\s+\1/g,
+/(\S+),\s*\1/g,
+/(\S+)\s+그리고\s+\1/g,
+/(\S+)\s+와\s+\1/g,
+/(\S+)\s+과\s+\1/g,
+];
+let result = text;
+for (const p of patterns) {
+result = result.replace(p, '$1');
+}
+// 연속 동일 단어 제거 (띄어쓰기로 구분)
+result = result.replace(/(\S+)\s+\1/g, '$1');
+return result;
+}
+
 function renderResults(text, hits) {
 const sortedHits = [...hits].sort((a, b) => a.start - b.start);
 let lastIndex = 0;
@@ -727,8 +760,31 @@ previewParts.push(segment);
 }
 // always show original highlight in "원문"
 viewParts.push(`<mark title="${esc(hit.label)}">${esc(hit.span)}</mark>`);
-const canReplace = !!hit.replacement && (hit.confidence >= MIN_PREVIEW_CONF);
-if (canReplace) {
+
+// v2.0.2: 삭제 처리 (replacement가 빈 문자열인 경우)
+const isDelete = hit.replacement === "" && hit.delete_with_particle;
+const canReplace = (hit.replacement !== null && hit.replacement !== undefined) && (hit.confidence >= MIN_PREVIEW_CONF);
+
+if (isDelete && hit.confidence >= MIN_PREVIEW_CONF) {
+// 삭제 시 뒤따르는 조사도 함께 삭제
+const look = text.slice(hit.end, hit.end+3);
+const m = look.match(PARTICLE_PATTERN);
+if(m){
+lastIndex = hit.end + m[0].length;
+// 조사 삭제 후 남은 공백 처리
+const nextChar = text[lastIndex];
+if(nextChar === ' ') {
+// 앞에 공백이 있으면 하나만 남김
+const prevPart = previewParts[previewParts.length - 1] || '';
+if(prevPart.endsWith(' ') || prevPart.endsWith('&gt;')) {
+lastIndex++; // skip extra space
+}
+}
+}else{
+lastIndex = hit.end;
+}
+// 삭제된 내용은 preview에 아무것도 추가하지 않음 (완전 삭제)
+} else if (canReplace && hit.replacement !== "") {
 const look = text.slice(hit.end, hit.end+2);
 const m = look.match(/^(으로|로|을|를|은|는|이|가|과|와)/);
 if(m){
@@ -750,7 +806,16 @@ viewParts.push(segment);
 previewParts.push(segment);
 }
 document.getElementById("view").innerHTML = viewParts.join("").replace(/\\n/g, "<br>");
-document.getElementById("preview").innerHTML = previewParts.join("").replace(/\\n/g, "<br>");
+// v2.0.2: 미리보기에서 중복 대체어 제거
+let previewHtml = previewParts.join("").replace(/\\n/g, "<br>");
+// 텍스트만 추출해서 중복 제거 후 다시 적용 (HTML 태그 보존)
+const previewEl = document.getElementById("preview");
+previewEl.innerHTML = previewHtml;
+// 텍스트 노드에서 중복 대체어 제거
+const walker = document.createTreeWalker(previewEl, NodeFilter.SHOW_TEXT, null, false);
+while(walker.nextNode()) {
+walker.currentNode.textContent = removeDuplicateReplacements(walker.currentNode.textContent);
+}
 const hitsEl = document.getElementById("hits");
 hitsEl.innerHTML = "";
 if (!hits.length) {
@@ -760,31 +825,50 @@ return;
 for (const h of hits) {
 const row = document.createElement("div");
 row.className = "hit";
-const auto = (h.replacement && h.confidence >= MIN_PREVIEW_CONF);
+const isDelete = h.replacement === "" && h.delete_with_particle;
+const auto = ((h.replacement || isDelete) && h.confidence >= MIN_PREVIEW_CONF);
 const conf = Math.round(h.confidence * 100);
+let actionText = "";
+if (isDelete) {
+actionText = `<div class="pill" style="background:#3a1a1a;color:#ff6b6b">${auto ? '자동삭제' : '검토필요'}: [삭제+조사제거]</div>`;
+} else if (h.replacement) {
+actionText = `<div class="pill">${auto ? '자동적용' : '검토필요'}: ${esc(h.replacement)}</div>`;
+}
 row.innerHTML =
 `<div>
 <b>${esc(h.span)}</b> <span class="pill">${h.label}</span> <span class="pill">${conf}%</span><br/>
 <span class="muted">${h.source.doc} p.${h.source.page||'?'}: ${esc(h.source.quote||'')}</span>
-</div>` +
-(h.replacement ? `<div class="pill">${auto ? '자동적용' : '검토필요'}: ${esc(h.replacement)}</div>` : "");
+</div>` + actionText;
 hitsEl.appendChild(row);
 }
 }
 function applyAllReplacements() {
 let text = txtEl.value;
 const replacableHits = currentHits
-.filter(h => h.replacement && h.confidence >= MIN_PREVIEW_CONF)
+.filter(h => (h.replacement !== null && h.replacement !== undefined) && h.confidence >= MIN_PREVIEW_CONF)
 .sort((a,b) => b.start - a.start);
 for (const hit of replacableHits) {
+const isDelete = hit.replacement === "" && hit.delete_with_particle;
+if (isDelete) {
+// v2.0.2: 삭제 + 조사 제거
+const look = text.slice(hit.end, hit.end+3);
+const m = look.match(PARTICLE_PATTERN);
+const endPos = m ? hit.end + m[0].length : hit.end;
+text = text.slice(0, hit.start) + text.slice(endPos);
+} else {
 const sp = spliceWithParticle(text, hit.start, hit.end, hit.replacement);
 text = sp.newText;
 }
+}
+// v2.0.2: 중복 대체어 제거
+text = removeDuplicateReplacements(text);
+// 연속 공백 정리
+text = text.replace(/  +/g, ' ').trim();
 txtEl.value = text;
 document.getElementById("btn").click();
 }
 document.getElementById("btnSample").onclick = function() {
-txtEl.value = '유엔(UN) 보고서를 참조하여 챗GPT 초안 작성 후 MS워드 정리하고 Google Docs에 옮겼다.\\nZoom(웨일온)으로 발표하고 yutube·Instagram에 홍보했다.\\n이동은 KTX, 표지는 Canva 제작, 편집은 키네마스터 마무리했으며 소논문도 제출했다. 또한 Jupyter 통해 실험을 정리했고 CRISPR-Cas9 관련 내용을 참고했다. Java Script 및 JS도 사용했다.';
+txtEl.value = '유엔(UN) 보고서를 참조하여 챗GPT 초안 작성 후 MS워드 정리하고 Google Docs에 옮겼다.\\nZoom(웨일온)으로 발표하고 yutube·Instagram에 홍보했다.\\n이동은 KTX, 표지는 Canva 제작, 편집은 키네마스터 마무리했으며 소논문도 제출했다. 또한 Jupyter 통해 실험을 정리했고 CRISPR-Cas9 관련 내용을 참고했다. Java Script 및 JS도 사용했다.\\n토익을 시험봐서 좋은 점수를 받았고, TOEFL도 준비했다. 한자능력검정에서 2급을 취득했다.';
 };
 document.getElementById("btn").onclick = async function() {
 const text = txtEl.value || "";
