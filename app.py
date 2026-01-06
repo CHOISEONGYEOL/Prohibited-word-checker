@@ -183,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.0.7")
+app = FastAPI(title="LifeRec Checker", version="2.0.8")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -205,7 +205,7 @@ RULES = [
     {"pattern": r"(?:Canva|캔바|miricanvas|미리캔버스|mangoboard|망고보드)", "label": "상호명", "replacement": "디자인 제작 플랫폼", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "miricanvas(미리캔버스), mangoboard(망고보드), Canva(캔바) 등"}, "aliases": ["캔바앱", "미캔"]},
     {"pattern": r"(?:KineMaster|키네마스터|Premiere\s?Pro|프리미어\s?프로)", "label": "프로그램명", "replacement": "영상 편집 프로그램", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "영상 제작 프로그램, 영상 편집 프로그램"}, "aliases": ["키네", "프리미어"]},
     # --- 개발 언어 / 개발 도구 ---
-    {"pattern": r"(?:Python|파이썬|Java\b|자바|C\+\+|C언어|자바\s?스크립트|Java\s*Script|JavaScript|Javascript|JS\b)", "label": "프로그램명", "replacement": "프로그래밍 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 2, "quote": "프로그램명 (파이썬, C언어 등) 기재 불가"}, "aliases": ["파이선", "자바스크립", "씨언어", "javascript", "java script", "js"]},
+    {"pattern": r"(?:Python|파이썬|Java(?!Script)(?!\s*Script)\b|자바(?!스크립트)|C\+\+|C언어|자바\s?스크립트|Java\s*Script|JavaScript|Javascript|(?<![A-Za-z])JS(?![A-Za-z]))", "label": "프로그램명", "replacement": "프로그래밍 언어", "confidence": 0.92, "source": {"doc": "대체표현", "page": 2, "quote": "프로그램명 (파이썬, C언어 등) 기재 불가"}, "aliases": ["파이선", "자바스크립", "씨언어", "javascript", "java script", "js"]},
     {"pattern": r"(?:Jupyter|주피터|Colab|코랩|PyCharm|파이참|VS\s?Code|Visual\s?Studio\s?Code|비주얼\s?스튜디오\s?코드|Anaconda|Spyder)", "label": "프로그램명", "replacement": "개발 도구", "confidence": 0.92, "source": {"doc": "대체표현", "page": 2, "quote": "특정 소프트웨어/개발환경 기재 지양, 일반화 표현 사용"}, "aliases": ["주피터", "코랩", "파이참", "vscode", "vs코드"]},
     # --- 오피스 / 문서 ---
     {"pattern": r"(?:MS\s?워드|MS\s?Word|Microsoft\s?Word|워드)", "label": "프로그램명", "replacement": "문서작성 프로그램", "confidence": 0.92, "source": {"doc": "대체표현", "page": 1, "quote": "hwp, MS워드 → 문서작성 프로그램"}, "aliases": ["msword", "워드파일"]},
@@ -584,7 +584,7 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = r"""
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.0.7</title>
+<title>생기부 금칙어 검사기 – v2.0.8</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -592,7 +592,7 @@ HTML_PAGE = r"""
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.7)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.0.8)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
@@ -932,17 +932,25 @@ if (previewLastIndex < text.length) {
 previewParts.push(esc(text.slice(previewLastIndex)));
 }
 document.getElementById("view").innerHTML = viewParts.join("").replace(/\n/g, "<br>");
-// v2.0.7: 미리보기에서 중복 대체어 제거 (전체 텍스트 기준)
+// v2.0.8: 미리보기에서 중복 대체어 제거 (HTML 보존)
 let previewHtml = previewParts.join("").replace(/\n/g, "<br>");
+// v2.0.8: HTML 내에서 연속된 동일 대체어 병합 (녹색 밑줄 유지)
+// 예: <ins>프로그래밍 언어</ins> 및 <ins>프로그래밍 언어</ins> -> <ins>프로그래밍 언어</ins>
+previewHtml = previewHtml.replace(/(<ins[^>]*>)([^<]+)<\/ins>\s*및\s*\1\2<\/ins>/g, '$1$2</ins>');
+previewHtml = previewHtml.replace(/(<ins[^>]*>)([^<]+)<\/ins>\s*및\s*<ins[^>]*>\2<\/ins>/g, '$1$2</ins>');
+// "프로그래밍 언어" 및 "프로그래밍 언어도" 패턴
+previewHtml = previewHtml.replace(/(<ins[^>]*>)프로그래밍 언어<\/ins>\s*및\s*<ins[^>]*>프로그래밍 언어<\/ins>(도|를|을|은|는)?/g, '$1프로그래밍 언어$2</ins>');
 const previewEl = document.getElementById("preview");
 previewEl.innerHTML = previewHtml;
-// v2.0.7: 전체 텍스트를 추출해서 중복 제거 후 다시 적용
-let fullText = previewEl.innerText || previewEl.textContent;
-fullText = removeDuplicateReplacements(fullText);
-fullText = cleanupAfterDeletion(fullText);
-fullText = fixAwkwardParticles(fullText);  // v2.0.7: 조사 보정
-// HTML 없이 순수 텍스트로 표시 (대체어 스타일은 제거되지만 정확한 결과 우선)
-previewEl.innerHTML = esc(fullText).replace(/\n/g, "<br>");
+// v2.0.8: 텍스트 노드에서 어색한 문장 정리 (HTML 태그는 보존)
+const walker = document.createTreeWalker(previewEl, NodeFilter.SHOW_TEXT, null, false);
+while(walker.nextNode()) {
+let nodeText = walker.currentNode.textContent;
+nodeText = removeDuplicateReplacements(nodeText);
+nodeText = cleanupAfterDeletion(nodeText);
+nodeText = fixAwkwardParticles(nodeText);
+walker.currentNode.textContent = nodeText;
+}
 const hitsEl = document.getElementById("hits");
 hitsEl.innerHTML = "";
 if (!hits.length) {
