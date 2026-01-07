@@ -183,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.1.1")
+app = FastAPI(title="LifeRec Checker", version="2.1.2")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -584,15 +584,17 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = r"""
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.1.1</title>
+<title>생기부 금칙어 검사기 – v2.1.2</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .btn-mini{padding:6px 10px;border-radius:10px;font-size:12px;font-weight:700}
+ins.rep.deleted{background:#1a2a1f;color:#88ccaa;border-bottom:2px solid #ffaa00}
+ins.rep.deleted s{text-decoration:line-through;text-decoration-color:#ff6666}
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.1.1)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.1.2)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
@@ -894,7 +896,9 @@ if (isDelete && hit.confidence >= MIN_PREVIEW_CONF) {
 // 삭제 시 뒤따르는 조사도 함께 삭제 (미리보기에서만)
 const look = text.slice(hit.end, hit.end+3);
 const m = look.match(PARTICLE_PATTERN);
+let deletedText = hit.span;  // 삭제된 원본 텍스트
 if(m){
+deletedText += m[0];  // 조사도 포함
 previewLastIndex = hit.end + m[0].length;
 // 조사 삭제 후 남은 공백 처리
 const nextChar = text[previewLastIndex];
@@ -907,7 +911,8 @@ previewLastIndex++;
 }else{
 previewLastIndex = hit.end;
 }
-// 삭제된 내용은 preview에 아무것도 추가하지 않음 (완전 삭제)
+// v2.1.2: 삭제된 부분을 녹색 취소선으로 표시
+previewParts.push(`<ins class="rep deleted" title="삭제됨: ${esc(deletedText)}"><s>${esc(deletedText)}</s></ins>`);
 } else if (canReplace && hit.replacement !== "") {
 const look = text.slice(hit.end, hit.end+2);
 const m = look.match(/^(으로|로|을|를|은|는|이|가|과|와)/);
@@ -1018,7 +1023,7 @@ function convertMiddleDot(text) {
 return text.replace(/·/g, ', ');
 }
 
-// v2.1.0: 텍스트 전처리 - 특수문자/기호 정리
+// v2.1.2: 텍스트 전처리 - 특수문자/기호 정리 (대폭 확장)
 function preprocessText(text) {
 // ★★★ 최우선 법칙: 가운뎃점 → 콤마 변환 (절대 수정 금지!) ★★★
 text = convertMiddleDot(text);
@@ -1028,8 +1033,39 @@ text = text.replace(/\*\*+/g, '');
 text = text.replace(/###+/g, '');
 text = text.replace(/(?<![a-zA-Z0-9])#+(?![a-zA-Z0-9])/g, '');
 text = text.replace(/(?<![a-zA-Z0-9])\*+(?![a-zA-Z0-9])/g, '');
-// 3. 기타 불필요한 특수기호 제거 (문장부호 제외)
-text = text.replace(/[★☆●○◆◇■□▲△▶▷◀◁♠♣♥♦※†‡]/g, '');
+
+// 3. 모든 불필요한 특수기호 제거 (문장부호 . , ? ! 및 괄호 () 제외)
+// 일본식 괄호, 꺾쇠, 기호, 화살표, 도형, 카드, 음표, 체크박스 등 전부 포함
+text = text.replace(/[「」『』【】〈〉《》〔〕［］｛｝]/g, '');  // 각종 괄호류
+text = text.replace(/[★☆●○◆◇■□▲△▶▷◀◁◈◉◎]/g, '');  // 도형 기호
+text = text.replace(/[♠♣♥♦♤♧♡♢]/g, '');  // 카드 기호
+text = text.replace(/[※†‡⁂]/g, '');  // 참조 기호
+text = text.replace(/[→←↑↓↔↕⇒⇐⇑⇓⇔]/g, '');  // 화살표
+text = text.replace(/[♪♬♩♭♯]/g, '');  // 음표
+text = text.replace(/[☑☐☒✓✔✗✘✕✖]/g, '');  // 체크박스
+text = text.replace(/[─━│┃┄┅┆┇┈┉┊┋]/g, '');  // 선 문자
+text = text.replace(/[╭╮╯╰┌┐└┘├┤┬┴┼]/g, '');  // 박스 그리기
+text = text.replace(/[°℃℉‰‱]/g, '');  // 단위 기호 (온도 등)
+text = text.replace(/[©®™℗]/g, '');  // 저작권/상표
+text = text.replace(/[☀☁☂☃☄★☆☇☈]/g, '');  // 날씨/별
+text = text.replace(/[♀♂⚢⚣⚤⚥⚦⚧⚨]/g, '');  // 성별 기호
+text = text.replace(/[⚠⚡⚪⚫⚬⚭⚮⚯]/g, '');  // 기타 기호
+text = text.replace(/[❤❥❦❧❨❩❪❫❬❭❮❯❰❱]/g, '');  // 하트/괄호
+text = text.replace(/[❲❳❴❵❶❷❸❹❺❻❼❽❾❿]/g, '');  // 숫자 원문자
+text = text.replace(/[➀➁➂➃➄➅➆➇➈➉]/g, '');  // 숫자 원문자2
+text = text.replace(/[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]/g, '');  // 원숫자
+text = text.replace(/[ⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ]/g, '');  // 원알파벳
+text = text.replace(/[ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏ]/g, '');  // 원대문자
+text = text.replace(/[㉠㉡㉢㉣㉤㉥㉦㉧㉨㉩㉪㉫㉬㉭]/g, '');  // 한글 원문자
+text = text.replace(/[㈀㈁㈂㈃㈄㈅㈆㈇㈈㈉㈊㈋㈌㈍㈎㈏]/g, '');  // 괄호 한글
+text = text.replace(/[㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉]/g, '');  // 원숫자(한자)
+text = text.replace(/[▁▂▃▄▅▆▇█▉▊▋▌▍▎▏]/g, '');  // 블록
+text = text.replace(/[░▒▓]/g, '');  // 음영
+text = text.replace(/[╱╲╳]/g, '');  // 대각선
+text = text.replace(/[〃〄々〆〇]/g, '');  // 일본 기호
+text = text.replace(/[＊＃＋－＝＜＞｜～￣＿]/g, '');  // 전각 기호
+text = text.replace(/[`~^\\|@$%&]/g, '');  // 일반 특수문자 (프로그래밍용 제외 시 필요하면 조정)
+
 // 4. 연속 공백 정리
 text = text.replace(/\s{2,}/g, ' ');
 // 5. 콤마 뒤 공백 정리
