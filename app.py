@@ -183,7 +183,7 @@ def normalize_for_neis(
 # =========================
 # FastAPI App Setup
 # =========================
-app = FastAPI(title="LifeRec Checker", version="2.1.3")
+app = FastAPI(title="LifeRec Checker", version="2.1.4")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=False,
@@ -584,7 +584,7 @@ def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
 HTML_PAGE = r"""
 <!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>생기부 금칙어 검사기 – v2.1.3</title>
+<title>생기부 금칙어 검사기 – v2.1.4</title>
 <style>:root{--bg:#0b1020;--card:#111830;--ink:#e6edff;--muted:#9db1ff;--accent:#4f7cff;--hit:#ff4455;--ok:#25d366;--warn:#ffaa00}*{box-sizing:border-box}body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--ink)}.wrap{max-width:1100px;margin:36px auto;padding:0 16px}.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}h1{margin:0 0 8px}.muted{color:var(--muted);font-size:12px}textarea{width:100%;min-height:160px;padding:14px;border-radius:14px;border:1px solid #263257;background:#0e1430;color:var(--ink);font-size:16px;resize:vertical}button{background:var(--accent);color:white;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr 320px;gap:16px}@media (max-width: 900px) {.grid{grid-template-columns: 1fr;}}.panel{background:#0e1430;border:1px solid #263257;border-radius:14px;padding:14px}mark{background:transparent;color:var(--hit);font-weight:800;text-decoration:underline;text-underline-offset:3px}ins.rep{background:#0f2a1f;color:#b2ffd8;text-decoration:none;border-bottom:2px solid var(--ok);padding:0 2px}.hit{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263257;padding:8px 0}.pill{font-size:12px;padding:3px 8px;border-radius:999px;background:#1b2342;color:#c7d3ff}.byte-box{background:linear-gradient(135deg,#1a2744 0%,#0e1430 100%);border:1px solid #263257;border-radius:14px;padding:16px;margin-top:12px}.byte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.byte-item{text-align:center;padding:12px;background:#0b1020;border-radius:10px}.byte-value{font-size:28px;font-weight:800;color:var(--accent)}.byte-label{font-size:11px;color:var(--muted);margin-top:4px}.byte-warn{color:var(--warn)}.suspicious-list{margin-top:12px;font-size:12px;color:var(--warn)}.suspicious-item{padding:4px 0;border-bottom:1px dashed #263257}
 
 .panel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -594,7 +594,7 @@ ins.rep.deleted s{text-decoration:line-through;text-decoration-color:#ff6666}
 
 </style></head><body>
 <div class="wrap">
-<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.1.3)</span></h1>
+<h1>생기부 금칙어 검사기 <span style="font-size:14px;color:var(--accent)">(v2.1.4)</span></h1>
 <div class="card">
 <div class="muted">본문을 붙여넣고 "검사"를 누르세요 · <b>바이트 수</b>와 <b>금칙어</b>를 동시에 검사합니다</div>
 <textarea id="txt"></textarea>
@@ -1070,9 +1070,21 @@ text = text.replace(/[〃〄々〆〇]/g, '');  // 일본 기호
 text = text.replace(/[＊＃＋－＝＜＞｜～￣＿]/g, '');  // 전각 기호
 text = text.replace(/[`~^\\|@$%&]/g, '');  // 일반 특수문자 (프로그래밍용 제외 시 필요하면 조정)
 
-// 4. 연속 공백 정리
+// 4. 문장 종결 콤마 → 마침표 변환 (v2.1.4)
+// "~함," "~됨," "~있음," 등 종결어미 뒤 콤마를 마침표로 교체
+const sentenceEndings = [
+'함', '됨', '있음', '없음', '보임', '드러남', '갖춤', '돋보임',
+'기대됨', '가능함', '필요함', '제시함', '강조함', '확보함', '마련함',
+'구체화함', '체계화함', '높임', '강화함', '줄임', '늘림', '뒷받침함',
+'해소됨', '감소됨', '증가함', '정착됨', '나타남', '이루어짐', '진행됨',
+'완료됨', '수행함', '발휘함', '보여줌', '이끌어냄', '키움', '성장함'
+];
+const endingPattern = new RegExp('(' + sentenceEndings.join('|') + '),(?=\\s)', 'g');
+text = text.replace(endingPattern, '$1.');
+
+// 5. 연속 공백 정리
 text = text.replace(/\s{2,}/g, ' ');
-// 5. 콤마 뒤 공백 정리
+// 6. 콤마 뒤 공백 정리
 text = text.replace(/,\s*,/g, ',');
 text = text.replace(/,\s+/g, ', ');
 return text.trim();
