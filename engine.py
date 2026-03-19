@@ -1,5 +1,6 @@
 import os
 import re
+import threading
 from typing import List, Optional, Dict
 
 import numpy as np
@@ -7,21 +8,32 @@ import numpy as np
 from schemas import Hit, Source
 
 # =========================
-# AI Model Loading
+# AI Model Loading (백그라운드 로딩으로 앱 즉시 시작)
 # =========================
 # 경량 모델로 교체: bge-m3(2.2GB) → multilingual-e5-small(470MB)
 # E5 prefix 자동 처리 지원
 EMB_MODEL = os.getenv("EMB_MODEL", "intfloat/multilingual-e5-small")
 _embedder = None
-try:
-    from sentence_transformers import SentenceTransformer
-    print(f"Loading embedding model: {EMB_MODEL}...")
-    _embedder = SentenceTransformer(EMB_MODEL)
-    print("Model loaded successfully.")
-except Exception as e:
-    print(f"Warning: Failed to load sentence-transformer model: {e}")
-    print("Running in regex-only mode.")
-    _embedder = None
+_model_ready = False  # 모델 로딩 완료 여부
+
+
+def _load_model_background():
+    """백그라운드에서 모델 로드 → 앱 시작을 차단하지 않음."""
+    global _embedder, _model_ready
+    try:
+        from sentence_transformers import SentenceTransformer
+        print(f"[Background] Loading embedding model: {EMB_MODEL}...")
+        _embedder = SentenceTransformer(EMB_MODEL)
+        print("[Background] Model loaded successfully.")
+        # 모델 로드 후 alias 인덱스 자동 재구축
+        if _RULES:
+            _rebuild_alias_index()
+        _model_ready = True
+    except Exception as e:
+        print(f"Warning: Failed to load sentence-transformer model: {e}")
+        print("Running in regex-only mode.")
+        _embedder = None
+        _model_ready = True  # 실패해도 ready 표시 (regex-only 모드)
 
 
 # =========================
@@ -97,14 +109,15 @@ _RULES = []
 
 
 def init_engine(rules: list):
-    """Initialize engine with rules. Call once at startup."""
+    """Initialize engine with rules. Call once at startup.
+
+    모델 로딩은 백그라운드에서 수행 → 앱 즉시 시작 가능.
+    모델 로드 전에는 regex + exact alias 매칭만 동작.
+    """
     global _ALIAS_EMB_INDEX, _ALIAS_RULES, _ALIAS_EXACT_MAP, _KNOWN_ABBREVS, _RULES
     _RULES = rules
 
-    # Build embedding alias index
-    _ALIAS_EMB_INDEX, _ALIAS_RULES = _build_alias_index(rules)
-
-    # Build exact alias map
+    # Build exact alias map (즉시 - 모델 불필요)
     _ALIAS_EXACT_MAP.clear()
     for rule in rules:
         for a in rule.get("aliases", []):
@@ -112,7 +125,7 @@ def init_engine(rules: list):
                 continue
             _ALIAS_EXACT_MAP[a.lower()] = rule
 
-    # Build known abbreviations set
+    # Build known abbreviations set (즉시 - 모델 불필요)
     _KNOWN_ABBREVS.clear()
     for rule in rules:
         pattern = rule.get("pattern", "")
@@ -120,6 +133,17 @@ def init_engine(rules: list):
         _KNOWN_ABBREVS.update(matches)
         matches = re.findall(r'(?:^|[|(?:])([A-Z][A-Z0-9]{1,10})(?:[|)]|$)', pattern)
         _KNOWN_ABBREVS.update(matches)
+
+    # 모델 로딩 + 임베딩 인덱스 빌드를 백그라운드에서 실행
+    thread = threading.Thread(target=_load_model_background, daemon=True)
+    thread.start()
+    print("Engine initialized (regex + alias ready). Model loading in background...")
+
+
+def _rebuild_alias_index():
+    """모델 로드 완료 후 alias 임베딩 인덱스 재구축."""
+    global _ALIAS_EMB_INDEX, _ALIAS_RULES
+    _ALIAS_EMB_INDEX, _ALIAS_RULES = _build_alias_index(_RULES)
 
 
 def _build_alias_index(rules: list):

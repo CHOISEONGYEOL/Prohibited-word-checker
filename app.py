@@ -574,6 +574,12 @@ document.getElementById("btnSample").click();
 # =========================
 # API Routes
 # =========================
+@app.get("/health", summary="Health check for CloudType")
+def health():
+    from engine import _model_ready
+    return {"status": "ok", "model_ready": _model_ready}
+
+
 @app.get("/", response_class=HTMLResponse, summary="Main UI Page")
 def home():
     return HTML_PAGE
