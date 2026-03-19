@@ -9,7 +9,9 @@ from schemas import Hit, Source
 # =========================
 # AI Model Loading
 # =========================
-EMB_MODEL = os.getenv("EMB_MODEL", "BAAI/bge-m3")
+# 경량 모델로 교체: bge-m3(2.2GB) → multilingual-e5-small(470MB)
+# E5 prefix 자동 처리 지원
+EMB_MODEL = os.getenv("EMB_MODEL", "intfloat/multilingual-e5-small")
 _embedder = None
 try:
     from sentence_transformers import SentenceTransformer
@@ -40,37 +42,20 @@ MIN_PREVIEW_CONF = float(os.getenv("MIN_PREVIEW_CONF", "0.90"))
 
 
 # =========================
-# Korean token heuristics
+# Korean token heuristics (불용어 대폭 축소)
 # =========================
 _JOSA_RE = re.compile(
     r"(으로|라서|라며|라고|이라|라|을|를|은|는|이|가|에|에서|에게|께서|로|와|과|도|만|까지|부터|처럼|보다|께|한테|에게서|이다|함)$"
 )
 
-# 기존 불용어 + 교과/학교 관련 확장 불용어 (블랙리스트 방식)
+# 축소된 불용어: 절대로 금칙어/브랜드명이 될 수 없는 단어만 포함
+# 기존 72개 → 30개로 축소 ("프로그램", "개발", "제작" 등 제거)
 STOPWORDS_KO = {
-    # 기존
-    "프로그램", "개발", "진행", "통해", "작성", "정리", "제출", "보고서",
-    "발표", "이동", "제작", "편집", "마무리", "활용", "참조", "옮겼다",
-    "초안", "정리하고", "옮김", "검토", "결과", "내용", "학습", "활동",
-    # 교과목
-    "사회", "과학", "국어", "영어", "수학", "역사", "도덕", "음악",
-    "미술", "체육", "기술", "가정", "정보", "통합",
-    # 학교 일반
-    "학생", "선생님", "수업", "과제", "교실", "시간", "방법", "교육",
-    "지도", "평가", "성적", "태도", "노력", "참여", "협력", "소통",
-    "창의", "문제", "해결", "능력", "성장", "변화", "이해", "분석",
-    "탐구", "실험", "관찰", "조사", "연구", "토론", "토의",
-    "봉사", "자율", "동아리", "진로", "독서", "체험", "행사", "대회",
-    # 형용사/서술어
-    "우수", "성실", "적극", "꾸준", "모둠", "친구", "선배", "후배",
+    "학생", "선생님", "수업", "교실", "시간", "방법", "교육",
+    "태도", "노력", "참여", "협력", "소통", "성장", "변화",
     "뛰어난", "탁월한", "다양한", "적극적", "자발적", "능동적",
-    # 동사/서술어
-    "수행", "실시", "구현", "완성", "달성", "설명", "표현", "발휘",
-    "기여", "향상", "개선", "강화", "확대", "축소", "배움", "성찰",
-    "준비", "계획", "실천", "반영", "적용", "구성", "설계", "완료",
-    # 기타
-    "과정", "단계", "주제", "목표", "자료", "기록", "보고", "발견",
-    "의견", "제안", "논의", "합의", "결론", "요약", "설명문",
+    "과정", "단계", "주제", "목표", "친구", "선배", "후배",
+    "배움", "성찰", "의견",
 }
 
 
@@ -215,22 +200,61 @@ def alias_exact_match(text: str) -> List[Hit]:
 
 
 # =========================
-# Semantic Matching (improved thresholds)
+# Semantic Matching (n-gram 후보 생성으로 개선)
 # =========================
-def _get_semantic_candidates(text: str, min_len=2, max_len=30):
-    for match in re.finditer(r"\b[A-Za-z가-힣0-9][A-Za-z가-힣0-9\.\-_/()]*\b", text):
+_TOKEN_RE = re.compile(r"[A-Za-z가-힣0-9][A-Za-z가-힣0-9.\-_/()]*")
+
+
+def _get_semantic_candidates(text: str, min_len=2, max_len=40):
+    """1-gram, 2-gram, 3-gram 후보를 생성하여 복합 표현도 매칭."""
+    tokens = list(_TOKEN_RE.finditer(text))
+    candidates = []
+    seen = set()
+
+    for i, match in enumerate(tokens):
         token = match.group(0).strip()
-        if not (min_len <= len(token) <= max_len):
-            continue
-        if not _should_consider_token(token):
-            continue
-        yield token, match.start(), match.end()
+
+        # 1-gram
+        if min_len <= len(token) <= max_len and _should_consider_token(token):
+            key = (match.start(), match.end())
+            if key not in seen:
+                candidates.append((token, match.start(), match.end()))
+                seen.add(key)
+
+        # 2-gram: 인접 토큰이 가까우면 결합
+        if i + 1 < len(tokens):
+            next_m = tokens[i + 1]
+            gap = next_m.start() - match.end()
+            if gap <= 3:  # 공백/조사 하나 정도
+                combined = text[match.start():next_m.end()]
+                if min_len <= len(combined) <= max_len:
+                    key = (match.start(), next_m.end())
+                    if key not in seen:
+                        candidates.append((combined, match.start(), next_m.end()))
+                        seen.add(key)
+
+        # 3-gram: 3개 토큰 결합 (Final Cut Pro, Chat GPT 등)
+        if i + 2 < len(tokens):
+            next_m = tokens[i + 1]
+            next_next_m = tokens[i + 2]
+            gap1 = next_m.start() - match.end()
+            gap2 = next_next_m.start() - next_m.end()
+            if gap1 <= 3 and gap2 <= 3:
+                combined = text[match.start():next_next_m.end()]
+                if min_len <= len(combined) <= max_len * 2:
+                    key = (match.start(), next_next_m.end())
+                    if key not in seen:
+                        candidates.append((combined, match.start(), next_next_m.end()))
+                        seen.add(key)
+
+    return candidates
 
 
-def semantic_match(text: str, threshold: float = 0.80, max_hits: int = 20) -> List[Hit]:
+def semantic_match(text: str, threshold: float = 0.78, max_hits: int = 20) -> List[Hit]:
+    """임베딩 기반 시맨틱 매칭. threshold 0.80→0.78로 완화."""
     if not (_embedder and _ALIAS_EMB_INDEX is not None):
         return []
-    candidates = list(_get_semantic_candidates(text))
+    candidates = _get_semantic_candidates(text)
     if not candidates:
         return []
     cand_tokens = [c[0] for c in candidates]
@@ -246,13 +270,17 @@ def semantic_match(text: str, threshold: float = 0.80, max_hits: int = 20) -> Li
         best_idx = int(np.argmax(row))
         score = float(row[best_idx])
         second = float(np.partition(row, -2)[-2]) if row.size > 1 else 0.0
-        if not (score >= threshold and (score - second) >= 0.04):
+        # 임계값 완화: 0.80→0.78, gap 0.04→0.03
+        if not (score >= threshold and (score - second) >= 0.03):
             continue
         span_text, start, end = candidates[i]
         if (start, end) in used_spans:
             continue
+        # 이미 잡힌 범위와 겹치면 스킵
+        if any(s < end and start < e for s, e in used_spans):
+            continue
         matched_rule = _ALIAS_RULES[best_idx]
-        # 단계별 신뢰도: 높은 유사도는 자동 대체 가능
+        # 단계별 신뢰도
         if score >= 0.95:
             conf = 0.94
         elif score >= 0.90:
@@ -271,7 +299,7 @@ def semantic_match(text: str, threshold: float = 0.80, max_hits: int = 20) -> Li
 
 
 # =========================
-# Unknown Abbreviation Detection
+# Unknown Abbreviation Detection (개선: 혼합 대소문자도 감지)
 # =========================
 def detect_unknown_abbreviations(text: str, existing_hits: List[Hit]) -> List[Hit]:
     hits: List[Hit] = []
@@ -280,6 +308,7 @@ def detect_unknown_abbreviations(text: str, existing_hits: List[Hit]) -> List[Hi
         for i in range(h.start, h.end):
             covered.add(i)
 
+    # 기존: ALL-CAPS 2~10자
     for match in re.finditer(r'(?<![A-Za-z])([A-Z]{2,10})(?![A-Za-z])', text):
         abbrev = match.group(1)
         start, end = match.start(), match.end()
@@ -298,6 +327,25 @@ def detect_unknown_abbreviations(text: str, existing_hits: List[Hit]) -> List[Hi
             ),
             start=start, end=end,
         ))
+
+    # 신규: CamelCase 패턴 (예: ChatGpt, PyTorch 등 - 이미 규칙에 없는 것만)
+    for match in re.finditer(r'(?<![A-Za-z])([A-Z][a-z]+(?:[A-Z][a-z]+)+)(?![A-Za-z])', text):
+        term = match.group(1)
+        start, end = match.start(), match.end()
+        if any(i in covered for i in range(start, end)):
+            continue
+        hits.append(Hit(
+            span=term,
+            label="미확인 영문 용어",
+            replacement=None,
+            confidence=0.80,
+            source=Source(
+                doc="자동 감지", page=None,
+                quote="영문 복합어가 감지됨. 한글 표기 필요 여부 검토 필요.",
+            ),
+            start=start, end=end,
+        ))
+
     return hits
 
 
@@ -372,21 +420,38 @@ def collapse_parenthetical_duplicates(text: str, hits: List[Hit]) -> List[Hit]:
 
 
 # =========================
-# Merge Hits
+# Merge Hits (신뢰도+길이 기반 우선순위로 전면 개선)
 # =========================
 def merge_hits(*hit_groups: List[Hit]) -> List[Hit]:
+    """겹치는 히트 중 가장 좋은 것을 선택.
+
+    기존: 왼쪽부터 탐욕적으로 선택 → 짧은 오탐이 긴 정탐을 삭제하는 문제
+    개선: 신뢰도 높고 긴 히트를 우선 선택, 겹치는 것은 제거
+    """
     all_hits: List[Hit] = []
     for g in hit_groups:
         all_hits.extend(g)
-    all_hits = sorted(
-        all_hits, key=lambda h: (h.start, -(h.end - h.start), -h.confidence)
-    )
     if not all_hits:
         return []
+
+    # 중복 제거 (같은 위치, 같은 라벨)
+    seen = set()
+    deduped: List[Hit] = []
+    for h in all_hits:
+        key = (h.start, h.end, h.label)
+        if key not in seen:
+            seen.add(key)
+            deduped.append(h)
+
+    # 신뢰도 내림차순, 길이 내림차순으로 정렬 → 좋은 히트부터 선택
+    deduped.sort(key=lambda h: (-h.confidence, -(h.end - h.start)))
+
+    # 탐욕적 선택: 겹치지 않는 히트만 추가
     merged: List[Hit] = []
-    last_hit_end = -1
-    for hit in all_hits:
-        if hit.start >= last_hit_end:
+    for hit in deduped:
+        if not any(h.start < hit.end and hit.start < h.end for h in merged):
             merged.append(hit)
-            last_hit_end = hit.end
+
+    # 위치순 정렬
+    merged.sort(key=lambda h: h.start)
     return merged
